@@ -241,18 +241,19 @@ function includeFiles($type, $skip_files=array()) { // type is { PHP | JS | CSS 
 	if ($type != 'CSS') ksort($files);
 	if ($type == 'JavaScript' ) $skip_files = get('skip-load');
 	
-	$cssconfig = get('configuration').'/css.php';
-	if (($type == 'CSS') && file_exists($cssconfig)) include $cssconfig; // if found
+	if ($type == 'CSS') {
+		$cssconfig = get('configuration').'/css.php';
+		if (file_exists($cssconfig)) include $cssconfig; // if found
+	}
 	
 	$processedFiles = array();	
 	foreach ($files as $file => $dir) {
 		$filename = str_replace('//', '/', $dir.$file);
-		
 		// should we skip this file?
 		if (!file_exists($filename) ||
 			in_array($filename, $processedFiles) ||
 			(is_array($skip_files) && in_array($file, $skip_files)) || 
-			(pathinfo($filename, PATHINFO_EXTENSION) != strtolower($type))) continue;
+			('.'.pathinfo($filename, PATHINFO_EXTENSION) != strtolower($ext))) continue;
 		
 		$processedFiles[] = $filename;
 		
@@ -268,13 +269,14 @@ function includeFiles($type, $skip_files=array()) { // type is { PHP | JS | CSS 
 		}
 		
 		$label = "\n".'/* '.$filename.' */'."\n\n";
-		switch (strtoupper($type)) {
+		switch ($type) {
 			case 'CSS':
 				if (param('absolute', 'exists')) set('absolute-references', true);
 				$siteURIs = true;
 				break;
 				
 			case 'JavaScript':
+				if ($process == 'include') $process = 'raw';
 				if ($process == 'eval') $process = 'include';
 				break;
 				
@@ -1014,17 +1016,26 @@ function param ($var, $part='value', $def='') {
 	
 	// special case when passed an array of parameters to get the values of
 	if (is_array($var)) {
-		$result = array();
-		foreach ($var as $name) {
-			$value = $def;
-			if (array_key_exists($name, $params)) $value = $params[$name];
-			$result[$name] = $value;
+		if ($part == 'value') {
+			$result = array();
+			foreach ($var as $name) {
+				$value = $def;
+				if (array_key_exists($name, $params)) $value = $params[$name];
+				$result[$name] = $value;
+			}
+			
+			return $result;
+			
+		} else if ($part == 'exists') {
+			foreach ($var as $v) {
+				if (array_key_exists($v, $params)) return true;
+			}
+			return false;
 		}
-		
-		return $result;
+	} else {
+		$exists = array_key_exists($var, $params);
 	}
-
-	$exists = array_key_exists($var, $params);
+	
 	switch ($part) {
 		case 'exists':
 			return $exists;
