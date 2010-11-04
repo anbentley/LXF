@@ -1,0 +1,42 @@
+<?php
+$changes = array(
+	'cm' => array( // General Comments
+		'Code Cleanup'	=> 'Many files have been changed, but most changes involve replacing old function calls with new ones.
+							This is on-going, so if any odd behavior is noticed, it should be reported.',
+		'Query Removal' => 'Work continues on this so that eventually all queries will be in class files and not in pages.
+							As we move forward we need to evaluate new and old queries to see if we can combine functions.',
+	),
+	
+	'tl' => array( // Tools
+		'dev:core/search'	=> 'Search should be way faster.<br />
+								Remember that when you search parts on CHDS, you search parts/logistica so you might want to exclude that.',
+	),
+	
+	'al' => array( // Added Libraries
+	),
+	
+	'ul' => array( // Updated Libraries
+		'FORM'		=> 'Fixes to standardize element creation.<br />
+						Fixed wrong code for generating checkboxes and radio buttons to support clickable labels.<br />
+						Added new value use-entities to allow form fields to handle HTML entity values.<br />
+						All javascript actions are supported directly in form elements.<br />
+						<em>submitname</em> is now <em>submit-name</em>, <em>supress-submit</em> is now <em>submit-suppress</em>.',
+		'SEARCH'	=> 'improved search logic to be much faster and better handling of case sensitivity',
+		'INIT'		=> 'now eliminates duplicate files from being processed twice',
+	),
+	
+	'rl' => array( // Removed Libraries
+	),
+	
+	'af' => array( // Added Functions
+		'HTML::jsattributes'	=>	'returns the names of all valid javascript actions',
+	),
+	
+	'uf' => array( // Updated Functions
+		'FORM::displayEdit'		=> 'improved display of composite fields',
+	),
+	
+	'rf' => array( // Removed Functions
+	),
+);
+?>

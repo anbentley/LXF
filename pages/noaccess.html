@@ -1,0 +1,10 @@
+<h1>We're sorry</h1>
+
+<p>
+The account you are using (<?php echo get_auth_info('CHDS_login'); ?>)
+is not authorized to access the resources you requested (<?php echo param('w'); ?>).
+</p>
+
+<p>
+You can <?php LINK::local('auth/logout', 'logout'); ?> and try another account, or continue browsing the site.
+</p>

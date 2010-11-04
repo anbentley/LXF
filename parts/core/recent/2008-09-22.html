@@ -1,0 +1,41 @@
+<?php
+$changes = array(
+	'cm' => array( // General Comments
+		'Code Cleanup'		=> 'Many files are being changed, but most changes involve replacing old function calls with new ones.
+								This is on-going, so if any odd behavior is noticed, it should be reported.',
+								
+		'Query Removal'		=> 'Work continues on this so that eventually all queries will be in class files and not in pages.
+								As we move forward we need to evaluate new and old queries to see if we can combine functions.',
+								
+		'HTML Validation'	=> 'I&rsquo;ve gone over the public site on CHDS to look for places where things were not validating.
+								At this point the public pages now validate.
+								While this isn&rsquo;t directly a part of the libraries, functions in the libraries make it much easier to insure we validate.
+								We should continue to be aware of pages that are messed up in some way to provide the best possible site.',
+	),
+	
+	'tl' => array( // Tools
+	),
+	
+	'al' => array( // Added Libraries
+	),
+	
+	'ul' => array( // Updated Libraries
+		'FILE_MANAGER'	=> 'New feature allows for the carrying along of a set of parameters during a session of the file manager',
+		'FORM'			=> 'Significant rewrites to stabilize form creation and processing, value passing and such.',
+	),
+	
+	'rl' => array( // Removed Libraries
+	),
+	
+	'af' => array( // Added Functions
+		'UTIL::extract_items'	=> 'Extracts a list of entries from a data source, or from the parameters of the page.',
+	),
+	
+	'uf' => array( // Updated Functions
+		'DEBUG::show' => 'Now displays null values as [null]',
+	),
+	
+	'rf' => array( // Removed Functions
+	),
+);
+?>

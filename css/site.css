@@ -1,0 +1,14 @@
+/* Site CSS */
+
+div.clearboth {
+	clear: both;
+}
+
+div.clearleft {
+	clear: left;
+}
+
+div.clearright {
+	clear: right;
+}
+

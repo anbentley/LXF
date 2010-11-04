@@ -1,0 +1,38 @@
+<?php
+$changes = array(
+	'cm' => array( // General Comments
+		'Code Cleanup'	=> 'Many files have been changed, but most changes involve replacing old function calls with new ones.
+							This is on-going, so if any odd behavior is noticed, it should be reported.',
+		'Query Removal' => 'Work continues on this so that eventually all queries will be in class files and not in pages.
+							As we move forward we need to evaluate new and old queries to see if we can combine functions.',
+	),
+	'tl' => array( // Tools
+	),
+	'al' => array( // Added Libraries
+	),
+	'ul' => array( // Updated Libraries
+		'FORM'								=> 'general code cleanup and use of new tag functions to standardize form HTML',
+		'LINK'								=> 'more code cleanup',
+		'IMG'								=> 'more code cleanup',
+		'HTML'								=> 'general code cleanup and additional functions',
+		'FMSM'								=> 'improved pattern matching and default support',
+		'SEARCH'							=> 'improved search logic to be much faster',
+	),
+	'rl' => array( // Removed Libraries
+	),
+	
+	'af' => array( // Added Functions
+		'HTML::selfclosing'					=> 'used in new tag functions to determine if a tag should be self-closing',
+		'FMSM::translatePattern'			=> 'translates basic pattern to regular expression to improve directory pattern matching',
+	),
+	'uf' => array( // Updated Functions
+		'FILE::resourceDefaults'			=> 'added directory entries to allow for resolving directories for pages, parts, and images',
+		'FMSM::permit'						=> 'replaced SESSION::get(\'CHDS_login\') with $details[\'user\'] and added regex pattern matching',
+	),
+	'rf' => array( // Removed Functions
+		'HTML::applyOptions'				=> 'replaced by new openTag function',
+		'HTML::buildTag'					=> 'replaced by new openTag function',
+		'UTIL::strcontains'					=> 'removed all references. should use UTIL::str_contains',
+	),
+);
+?>

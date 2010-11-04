@@ -1,0 +1,15 @@
+<?php
+
+if (param('on', 'exists')) {
+	debug(E_ALL);
+} else if (param('off', 'exists')) {
+	debug(0);
+}
+
+if (debug()) {
+	echo p('', 'Debug is enabled.');
+} else {
+	echo p('', 'Debug is disabled.');
+}
+
+?>

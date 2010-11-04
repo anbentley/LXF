@@ -1,0 +1,120 @@
+<?php
+membersOnly(array('Web Admin','Media Admin'));
+DEVTOOLS::nav();
+?>
+<style>
+	p {
+		margin-bottom:2px;
+	}
+	li {
+		font-size:10px;
+		font-family:arial;
+		line-height:10px;
+		padding:0px;
+	}
+	ul{
+		margin:0px;
+		padding:0px;
+	}
+	table.dblist {
+		width:100%;
+		border-collapse:collapse;
+		border:1px solid black;
+	}
+	table.dblist td, table.dblist th{
+		border:1px solid black;
+		width:50%;
+	}
+	.dblist th{
+		height:12px;
+		font-size:10px;
+		font-family:arial;
+		color:#fff;
+		background-color:#666;
+	}
+	th.dbgroup{
+		color:#000;
+		height:18px;
+		font-size:12px;
+		font-family:arial;
+		font-weight:normal;
+		background-color:#ccc;
+	}
+</style>
+<script>
+function siteChange(){
+	new Ajax.Updater({ success: 'pathdata' }, './?core/dirlist', {parameters:{path: $F('_-_site')}});
+}
+function pathChange(path){
+	new Ajax.Updater({ success: 'pathdata' }, './?core/dirlist', {parameters:{path: path}});
+}
+function submitForm(path){
+	$('successdata').innerHTML="";
+	cbs=document.getElementsByTagName("input");
+	items=new Array();
+	for(x=0,y=0;x<cbs.length;x++){
+		if(cbs[x].checked&&cbs[x].id!="_-_push"&&cbs[x].id!="_-_pull"){
+			items[y++]=cbs[x].id;
+			cbs[x].checked=false;
+			$('successdata').innerHTML+="<div id='_--_" + cbs[x].id + "'></div>";
+		}
+	}
+	for(x=0;x<items.length;x++){
+		new Ajax.Updater({ success: '_--_'+items[x] }, './?core/pushit', {parameters:{path: path+items[x], pushpull: $F('_-_push')}});
+	}
+	$('successdata').innerHTML+="<br /><br /><input type='button' onclick='unHideForm()' value='Continue' />";
+}
+function dataBaseCheck(path){
+	hideForm();
+	$('successdata').innerHTML="";
+	$('successdata').innerHTML+="<div id='dbdata'>Checking Database...<br /><br /></div>";
+	$('successdata').innerHTML+="<div id='filedata'><br /><br /><p><strong>The following is a list of files that will be processed:</strong></p></div>";
+	$('successdata').innerHTML+="<div id='buttons'><br /><br /><input type=\"button\" onclick=\"submitForm('" + path + "');\" value=\"Continue\" /><input type='button' onclick='unHideForm()' value='Cancel' /></div>";
+	new Ajax.Updater({ success: 'dbdata' }, './?core/dbcheck', {parameters:{}});
+	
+	cbs=document.getElementsByTagName("input");
+	items=new Array();
+	for(x=0,y=0;x<cbs.length;x++){
+		if(cbs[x].checked&&cbs[x].id!="_-_push"&&cbs[x].id!="_-_pull"){
+			items[y++]=cbs[x].id;
+			$('filedata').innerHTML+="<div id='_-f_" + cbs[x].id + "'></div>";
+		}
+	}
+	for(x=0;x<items.length;x++){
+		new Ajax.Updater({ success: '_-f_'+items[x] }, './?core/preview', {parameters:{path: path+items[x], pushpull: $F('_-_push')}});
+	}
+}
+function unHideForm(){
+	$('successdata').style.visibility="hidden";
+	$('successdata').style.display="none";
+	$('formDiv').style.visibility="visible";
+	$('formDiv').style.display="";
+}
+function hideForm(){
+	$('formDiv').style.visibility="hidden";
+	$('formDiv').style.display="none";
+	$('successdata').style.visibility="visible";
+	$('successdata').style.display="";
+}
+</script>
+<div id="successdata">
+</div>
+<br />
+<div id="formDiv">
+<form>
+<label for="_-_site">Select Site</label>
+<select id="_-_site" onchange="siteChange()">
+	<option></option>
+	<option value="/var/www/html/chds/">CHDS</option>
+	<option value="/var/www/html/hsdl/">HSDL</option>
+	<option value="/var/www/html/hsaj/">HSAJ</option>
+	<option value="/var/www/html/core/">Core</option>
+</select><br /><br />
+<input type="radio" name="pushpull" id="_-_push" value="push" checked />
+<label for="_-_push">I want to push files from the development server to the live server</label><br />
+<input type="radio" name="pushpull" id="_-_pull" value="pull" />
+<label for="_-_pull">I want to pull files from the live server to the development server</label><br />
+<div id="pathdata">
+</div>
+</form>
+</div>

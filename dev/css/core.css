@@ -1,0 +1,251 @@
+/* CSS Document */
+
+#dev-nav {
+	color: #444;
+	background-color: #DDD;
+}
+
+#dev-nav a {
+	color: #222;
+	display: inline;
+	background-color: #DDD;
+	padding-left: .5em;
+	padding-right: .5em;
+	text-decoration: none;
+}
+
+#dev-nav a:hover {
+	color: #DDD;
+	background-color: #777;
+}
+
+#dev-nav a.selected {
+	color: #DDD;
+	background-color: #222;
+}
+
+div.version-links {
+	background-color: #FFF;
+	color: #000;
+	padding: .25em;
+	border: 1px solid #DDD;
+}
+
+div.version-links a {
+	padding-left: .5em;
+	padding-right: .5em;
+}
+ 
+.search-term {
+	font-style: italic;
+	background-color: #EEE;
+	padding: 2px;
+	border: 1px solid #DDD;
+}
+
+.search-results {
+	list-style: none;
+}
+
+.search-results li {
+	padding-bottom: .5em;
+}
+
+.search-line {
+	font-size: 10px; 
+	color: #000;
+	font-family: Andale Mono, monospace;
+}
+
+.search-text {
+	background-color: #DDF;
+}
+
+fieldset.search-directories div {
+	width: 150px;
+	display: inline-block;
+}
+
+div.class-nav {
+	float: right; 
+	position: relative; 
+	width: 8em; 
+	border: 1px solid #DDD; 
+	margin-left: 1em; 
+	padding: 10px; 
+	background-color: #FFF;
+}
+
+div.class-nav a, div.element a {
+	display: block;
+}
+
+div.element {
+	border-bottom: 1px solid #DDD;
+	padding: .5em;
+}
+
+.element h2 {
+	padding: 1em 0 0 0;
+}
+
+.element .param, .element .param-value {
+	font-weight: bold;
+	width: 8em;
+	color: #555;
+	border-bottom: 1px dotted #EEE;
+}
+
+.element .param-value {
+	font-weight: normal;
+}
+
+.element .detail-comment {
+	font-style: italic;
+	padding-top: 1em;
+}
+
+.element table {
+	margin-left: 1em; 
+	width: 80%;
+}
+
+.element table td {
+	vertical-align: top;
+}
+
+.element .section {
+	width: 7em;
+	font-style: italic;
+	color: #555;
+}
+
+.element .comments {
+	font-style: normal;
+}
+
+.element .comments-blank {
+	font-style: normal;
+	font-size: .5em;
+}
+
+.element .toplink {
+	font-size: smaller;
+	color: #777;
+}
+
+.element .parameter-list {
+	font-size: smaller;
+	color: #444;
+	font-family: sans-serif;
+}
+
+.element .basictable .comments, .element .basictable .comments-blank {
+	display: none;
+}
+
+.method-list a:hover {
+	background-color: #EEE;
+}
+
+.history {
+	font-size: .85em;
+}
+
+dt {
+	font-weight: bold;
+	margin-bottom: .25em;
+}
+
+dt a {
+	text-decoration: none;
+}
+
+.recent-change-list {
+	width: 600px;
+}
+li.recent span.description {
+	float: right;
+	width: 300px;
+	position: relative;
+}
+
+li.recent {
+	clear: right;
+	border-top: 1px solid #EEE;
+}
+
+.recent-archive {
+	left: 720px;
+	width: 150px; 
+	padding: 10px; 
+	border: 1px solid #DDD; 
+	position: absolute;
+}
+
+.recent .lead-in {
+	font-weight: bold;
+	color: #777;
+}
+
+
+div.phpinfo {
+	margin-top: 2em;
+}
+div.phpinfo pre {
+	margin: 0px; font-family: monospace;
+}
+div.phpinfo a:link {
+	color: #000099; text-decoration: none; background-color: #ffffff;
+}
+div.phpinfo a:hover {
+	text-decoration: underline;
+}
+div.phpinfo table {
+	border-collapse: collapse;
+}
+div.phpinfo .center {
+	text-align: center;
+}
+div.phpinfo .center table { 
+	margin-left: auto; margin-right: auto; text-align: left;
+}
+div.phpinfo .center th { 
+	text-align: center !important; 
+}
+div.phpinfo td, th { 
+	border: 1px solid #000000; font-size: 75%; vertical-align: baseline;
+}
+div.phpinfo h1 {
+	font-size: 150%;
+}
+div.phpinfo h2 {
+	font-size: 125%;
+}
+div.phpinfo .p {
+	text-align: left;
+}
+div.phpinfo .e,
+div.phpinfo .h {
+	background-color: #ccccff; font-weight: bold; color: #000000;
+}
+div.phpinfo .v {
+	background-color: #cccccc; color: #000000;
+}
+div.phpinfo .vr {
+	background-color: #cccccc; text-align: right; color: #000000;
+}
+div.phpinfo img {
+	float: right; border: 0px;
+}
+div.phpinfo hr {
+	width: 600px; background-color: #cccccc; border: 0px; height: 1px; color: #000000;
+}
+
+div.phpselect a.turn-off {
+	color: red;
+}
+
+div.phpselect a.turn-on {
+	color: green;
+}

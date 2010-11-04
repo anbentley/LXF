@@ -1,0 +1,153 @@
+/* CSS Document */
+
+/* rounded corner support */
+/* 
+Typical xHTML markup for rounded elements 
+
+<div>
+	<b class='b1'></b><b class='b2'></b><b class='b3'></b><b class='b4'></b>
+		<div class='boxcontent'>
+			<div class='header'>
+				Header content
+			</div>
+			Content goes here
+		</div>
+	<b class='b4b'></b><b class='b3b'></b><b class='b2b'></b><b class='b1b'></b>
+</div>
+
+*/
+
+.b1, .b2, .b3, .b4, .b1b, .b2b, .b3b, .b4b {
+	display: block; 
+	overflow: hidden; 
+	font-size: 1px;
+}
+
+.b2, .b3, .b4 { 
+	background: #FFF; 
+}
+
+.b2, .b3, .b4, .b4b, .b3b, .b2b { 
+	border-left: 1px solid #CCC; 
+	border-right: 1px solid #CCC; 
+}
+
+.b1, .b1b { 
+	background: #CCC; 
+}
+
+.boxcontent { 
+	display: block;
+	background: #FFF; 
+	border-left: 1px solid #CCC; 
+	border-right: 1px solid #CCC; 
+}
+
+.b1, .b2, .b3, .b1b, .b2b, .b3b { 
+	height: 1px; 
+}
+
+.b1, .b1b { 
+	margin: 0 5px; 
+}
+
+.b2, .b2b { 
+	margin: 0 3px; 
+	border-width: 0 2px; 
+}
+
+.b3, .b3b { 
+	margin: 0 2px; 
+}
+
+.b4, .b4b { 
+	height: 2px; 
+	margin: 0 1px; 
+}
+
+.boxcontent { 
+	padding-bottom: 5px; 
+}
+
+.boxcontent .header { 
+	margin-bottom: 5px; 
+}
+
+.tabbed-panel .tab, .tabbed-panel .selected {
+	float: left;
+	height: 20px;
+	width: 150px;
+	margin-right: 5px;
+	color: black;
+}
+
+.tabbed-panel .selected .boxcontent, .tabbed-panel .tab .boxcontent {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+.tabbed-panel .selected .boxcontent {
+	background-color: #FFF;
+}
+
+.tabbed-panel .tab .boxcontent {
+	background-color: #CCC;
+}
+
+.tabbed-panel .tab .b1, .tabbed-panel .tab .b2 { border-left-color: #CCC; border-right-color: #CCC; }
+.tabbed-panel .tab .b3, .tabbed-panel .tab .b4, .tabbed-panel .tab .b4b, .tabbed-panel .tab .b3b, .tabbed-panel .tab .boxcontent { border-left-color: #CCC; border-right-color: #CCC; }
+.tabbed-panel .tab .b2b { border-left-color: #CCC; border-right-color: #CCC; } 
+.tabbed-panel .tab .b1b { border-left-color: #CCC; border-right-color: #CCC; } 
+.tabbed-panel .tab .b1 { background: #CCC; }
+.tabbed-panel .tab .b2, .tabbed-panel .tab .b3, .tabbed-panel .tab .b4 { background: #CCC; } 
+.tabbed-panel .tab .b1b { background: #CCC; } 
+
+.tabbed-panel .selected .b1, .tabbed-panel .selected .b2 { border-left-color: #CCC; border-right-color: #CCC; }
+.tabbed-panel .selected .b3, .tabbed-panel .selected .b4, .tabbed-panel .selected .b4b, .tabbed-panel .selected .b3b, .tabbed-panel .selected .boxcontent { border-left-color: #CCC; border-right-color: #CCC; }
+.tabbed-panel .selected .b2b { border-left-color: #CCC; border-right-color: #CCC; } 
+.tabbed-panel .selected .b1b { border-left-color: #CCC; border-right-color: #CCC; } 
+.tabbed-panel .selected .b1 { background: #CCC; }
+.tabbed-panel .selected .b2, .tabbed-panel .selected .b3, .tabbed-panel .selected .b4 { background: #FFF; } 
+.tabbed-panel .selected .b1b { background: #CCC; } 
+
+.tabbed-panel  .panel-contents .b1, .tabbed-panel  .panel-contents .b2 { border-left-color: #CCC; border-right-color: #CCC; }
+.tabbed-panel  .panel-contents .b3, .tabbed-panel  .panel-contents .b4, .tabbed-panel  .panel-contents .b4b, .tabbed-panel  .panel-contents .b3b, .tabbed-panel  .panel-contents .boxcontent { border-left-color: #CCC; border-right-color: #CCC; }
+.tabbed-panel  .panel-contents .b2b { border-left-color: #CCC; border-right-color: #CCC; } 
+.tabbed-panel  .panel-contents .b1b { border-left-color: #CCC; border-right-color: #CCC; } 
+.tabbed-panel  .panel-contents .b1 { background: #CCC; }
+.tabbed-panel  .panel-contents .b2, .tabbed-panel  .panel-contents .b3, .tabbed-panel  .panel-contents .b4 { background: #FFF; } 
+.tabbed-panel  .panel-contents .b1b { background: #CCC; } 
+
+.tabbed-panel .tab-panel {
+	margin-top: 20px;
+	margin-right: 10px;
+	height: 26px;
+	position: relative;
+	z-index: 2;
+}
+
+.tabbed-panel .panel-contents {
+	position: relative;
+	top: -1px;
+	z-index: 1;
+}
+
+.tabbed-panel .panel-contents .boxcontent {
+	padding-left: 10px;
+}
+
+.tabbed-panel .panel-contents .b1 { 
+	margin: 0 5px 0 0; 
+}
+
+.tabbed-panel .panel-contents .b2 { 
+	margin: 0 3px 0 0; 
+}
+
+.tabbed-panel .panel-contents .b3 { 
+	margin: 0 2px 0 0; 
+}
+
+.tabbed-panel .panel-contents .b4 { 
+	margin: 0 1px 0 0; 
+}

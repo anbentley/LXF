@@ -1,0 +1,64 @@
+/* sliding doors technique for select buttons */
+.select_bar_left,
+.select_bar {
+	margin: 10px;
+	float: left;
+	width: 100%;
+}
+
+.select_bar_right {
+	float: right;
+	width: 100%;
+}
+
+.admin_select_button,
+.admin_select_button_on,
+.select_button,
+.select_button_on {
+	padding: 0 0 1px 0;
+	margin: 0 5px 0 0;
+	background: url(images/ui_right_off.png) no-repeat right top;
+	border: none;
+}
+
+.select_button,
+.select_button_on {
+	float: right;
+}
+
+.select_bar_left .select_button,
+.select_bar_left .select_button_on,
+.admin_select_button,
+.admin_select_button_on {
+	float: left;
+}
+
+.admin_select_button_on a,
+.admin_select_button a,
+.select_button a,
+.select_button_on a {
+	color: #FFF;
+	display: block;
+	background: url(images/ui_left_off.png) no-repeat left top; 
+	padding: 1px 10px;
+	font-size: 12px;
+	font-family: Arial;
+	border: none;
+	height: 17px;
+	text-decoration: none;
+}
+
+.admin_select_button_on,
+.select_button_on {
+	background-image: url(images/ui_right_on.png);
+}
+
+.admin_select_button_on a,
+.select_button_on a {
+	color: #642;
+	background-image: url(images/ui_left_on.png);
+}
+
+/* end select buttons */
+
+

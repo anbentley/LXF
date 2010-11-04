@@ -1,0 +1,203 @@
+/* CSS Document */
+
+/* form entries */
+
+form {
+	margin: 0;
+	padding: 0;
+}
+
+.form {
+	display: block;
+}
+
+.form fieldset {
+	border: none;
+	position: relative;
+	padding: 0;
+	margin: 0;
+}
+
+.form legend {
+	display: none;
+}
+
+.form label, .form .comment, .form .comment-required, .form .form-label {
+    display: block;
+	font-family: $font[sans_serif];
+	color: #444;
+	font-size: 11px;
+	text-transform: uppercase;
+	padding-left: 2px;
+	margin: 0;
+	line-height: 11px;
+
+}
+
+.form span.form-label, .form .checkradio label.inline {
+	display: inline;
+	padding-right: 1.5em;
+}
+
+.form select {
+	margin: 2px 0 2px 0;
+}
+
+.form #refinement select {
+	margin: 0;
+}
+
+
+.form label.required { 
+	background-image:url(images/required.png);
+	background-repeat:no-repeat;
+	background-position:top left;
+	padding-left:11px;
+	margin-top:5px;
+}
+.form label{
+	margin-top:5px;
+}
+.form .comment-required {
+	clear: left;
+}
+
+#form-error {
+	background-color: #F33;
+}
+
+li.form-error {
+	background-color: #F33;
+	color: white;
+	margin: 0;
+	padding: 2px;
+	width: 300px;
+}
+
+.form .comment {
+	padding-bottom: 4px;
+	line-height: normal;
+	clear: left;
+}
+
+.form label.checkradio, .form div.checkradio label {
+    display: inline;
+	margin-right: .25em;
+}
+
+.form input, .form textarea {
+	font-family: $font[sans_serif];
+	font-size: $fontSize[body];
+	margin-bottom: 2px;
+	padding: 2px;
+}
+
+.form .required-multifield, .form .required-newmultifield, .form .multifield, .form .newmultifield, .form .newfield, .form .multifield {
+    float: left;
+	margin-right: 0.5em;
+}
+
+.form .inline, .form .inline-start, .form fieldset.inline {
+	float: left;
+	margin-right: 0.25em;
+	position: relative;
+}
+
+.form .field, .form .inline-start {
+	clear: left;
+	margin-right: 0.5em;
+}
+
+.form .required-field, .form div.newfield, .form .required-newmultifield, .form .newmultifieldt {
+	clear: left;
+}
+
+.form .submit {
+	clear: both; 
+	float: left;
+	position: relative;
+}
+
+#loginextras .form .field {
+	float: right;
+	text-align: right;
+}
+
+
+.hidden, .hidden input {
+	display: none;
+}
+
+.group {
+	padding: 0;
+	margin: 0;
+}
+
+
+
+#basic label {
+ display: none;
+}
+
+#basic select {
+	margin-top: 1px;
+}
+
+.datelabel {
+	font-family: Verdana;
+	font-size: 10px;
+	padding-top: 10px;
+}
+
+.formend {
+	height: 0px;
+	clear: left;
+}
+
+.form .required .field, .form .invalid .field, .form .required .inline, .form .invalid .inline {
+	border-left:  2px solid red;
+}
+
+.edit-in-place {
+	clear: left;
+}
+
+.form input[type='checkbox'] {
+	display: inline;
+	margin-top: 1.25em;
+}
+
+.form input[type='submit'], .form input[type='reset'] {
+	margin-top: 1em;
+}
+
+div.slideswitch input {
+	background-repeat: no-repeat; 
+	border: none; 
+	font-size: 0; 
+	width: 61px; 
+	height: 15px;
+	display: inline;
+}
+
+div.slideswitch label {
+	padding-right: 1em;
+	padding-top: .2em;
+	display: inline;
+}
+
+td div.slideswitch {
+	float: right;
+}
+
+input.combo {
+    margin-left: -2px;
+    margin-top: -20px;
+    position: absolute;
+    font-size: 9px;
+    height: 11px;
+}
+
+select.combo {
+    display: inline;
+}

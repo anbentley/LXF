@@ -1,0 +1,34 @@
+<?php
+$query="show databases";
+$db="people";
+$results=DB::query($db,$query);
+foreach($results as $result){
+	$databases[$result["Database"]]=1;
+}
+foreach($databases as $database=>$drop){
+	$query="show tables in " . $database;
+	$results=DB::query($database,$query);
+	foreach($results as $result){
+		$tables[$database][$result["Tables_in_" . $database]]=1;
+	}
+	foreach($tables[$database] as $table=>$drop){
+		$query="show columns in " . $table;
+		$results=DB::query($database,$query);
+		foreach($results as $result){
+			$fields[$database][$table][$result["Field"]]=$result["Type"];
+		}
+	}
+}
+while(@ob_end_clean());
+
+if(param("key")==date("Ymd")){
+	if(param("type")=="fields"){
+		echo serialize($fields);
+	} else if (param("type")=="tables"){
+		echo serialize($tables);
+	} else {
+		echo serialize($databases);
+	}
+}
+exit();
+?>

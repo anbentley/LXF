@@ -1,0 +1,35 @@
+<?php
+$changes = array(
+	'cm' => array( // General Comments
+		'Query Removal'	=> 'Work continues on this so that eventually all queries will be in class files and not in pages.
+							As we move forward we need to evaluate new and old queries to see if we can combine functions.',
+	),
+	'ul' => array( // Updated Libraries
+		'UTIL'					=> 'added show function similar to DEBUG::show but with a more usable display for front end use.',
+		'DEBUG'					=> 'uses code from UTIL::show but with a more usable display for debugging.',
+		'DOCSEARCH'				=> 'now uses filedate as the sort by date field for newsletters. Also added new title for DHS newsletter.',
+		'FORM'					=> 'now handles required popups that have not been changed correctly.',
+		'PARAM'					=> 'now handles parameters with zero values differently than those that mearly exist.',
+		'IMG_LAYOUT'			=> 'finally does things right in all browsers.',
+	),
+	
+	'rl' => array( // Removed Libraries
+	),
+	
+	'af' => array( // Added Functions
+		'UTIL::xempty'			=> 'does a better job of determinining real world empty than PHP\'s empty function.',
+	),
+	
+	'uf' => array( // Updated Functions
+	),
+	
+	'rf' => array( // Removed Functions
+	),
+	
+	'al' => array( // Added Libraries
+	),
+	
+	'tl' => array( // Tools
+	),
+);
+?>

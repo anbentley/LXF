@@ -1,0 +1,27 @@
+<div id="footer">
+<?php
+$os = $_SERVER['HTTP_USER_AGENT'];
+$p = page('site', ':').page();
+
+$uri = urlencode("$_SERVER[SCRIPT_URI]?$_SERVER[QUERY_STRING]");
+
+LINK::external("http://jigsaw.w3.org/css-validator/validator?uri=$uri", ' | ');
+
+$techsupportemail = '';
+$elink = "$techsupportemail?subject=Website Support&amp;body=OS and Browser: $os %0Djavascript:disabled%0DPage: http://$_SERVER[HTTP_HOST]/?$p%0D%0DPlease give a detailed description of the problem you are experiencing:%0D";
+
+// use javascript to determine if javascript is running
+LINK::mailto($elink, 'Email Support', array('id' => 'tech-support-email', 'onmouseover' => 'js_enabled();'));
+
+LINK::external("http://validator.w3.org/check?uri=$uri", ' | ');
+
+?>
+</div>
+<div id='printfooter'></div>
+<?php
+if(get('environment-params')){
+	DEBUG::display("Environment Variables: ");
+	DEBUG::display(get('environment-params'));
+}
+DEBUG::dump();
+?>

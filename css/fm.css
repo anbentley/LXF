@@ -1,0 +1,132 @@
+#filelist {
+	width: 750px;
+	border: 1px solid #CCC;
+}
+
+#filelist .form {
+	padding: 0;
+	margin: 0;
+}
+
+#filelist .form input {
+	font-size: smaller;
+	padding: 0;
+	margin: 0;
+}
+
+#filelist th, #filelist .status {
+	background: #DDD;
+	color: #000;
+}
+
+#filelist-embed td {
+	font-size: 11px;
+}
+
+#filelist-embed thead, #filelist-embed .status, #filelist-embed .operations {
+	display: none;
+}
+
+#filelist th {
+	padding: 0.5em 0.5em;
+	text-align: left;
+	font-weight: bold;
+}
+
+#filelist .title-links {
+	font-size: smaller;
+	font-weight: normal;
+	float: right;
+}
+
+#filelist tr {
+	background: #DDF;
+}
+
+#filelist tr.odd {
+	background: #FFF;
+}
+
+#filelist td {
+	color: #000;
+	font-size: 11px;
+	border-top: 0px;
+	border-bottom: 0px;
+}
+
+#filelist a {
+	color: #00F;
+	padding: 0.5em;
+}
+
+#filelist a:hover {
+	background-color: transparent;
+}
+
+#filelist .long {
+	font-weight: normal;
+	padding-left: 1em;
+}
+
+#filelist .dir .name {
+	font-weight: bold;
+}
+
+#filelist .thumb {
+	float: left;
+	width: 50px;
+	height: 50px;
+	text-align: center;
+}
+
+#filelist .icon {
+	float: left;
+	width: 32px;
+	height: 32px;
+	text-align: center;
+}
+
+#filelist .thumb img, #filelist .icon img {
+	margin: 0 auto 0 auto;
+}
+
+#filelist .operations {
+	font-size: 9px;
+	width: 18.75em;
+}
+
+#filelist .operations a img {
+	font-size: 9px;
+	padding-left: .1em;
+	padding-right: .1em;
+}
+
+#filelist .perms {
+	width: 2.25em;
+}
+
+#filelist .size {
+	text-align: right;
+	width: 7em;
+}
+
+#filelist .modified {
+	width: 6.5em;
+}
+
+#filelist .separator {
+	border-top: 1px solid #888;
+}
+
+#filelist .status span {
+	padding: 0;
+	margin: 0;
+}
+
+#filelist .error {
+	color: red;
+}
+
+#filelist .ok {
+	color: green;
+}

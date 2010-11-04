@@ -1,0 +1,14 @@
+<?php
+
+echo '<h1>Send a Twitter Status Update</h1>';
+
+$fields = array();
+$fields[] = array('element' => 'text', 'name' => 'twuser', 'label' => 'Twitter user', 'required');
+$fields[] = array('element' => 'text', 'name' => 'twpass', 'label' => 'password', 'password', 'required');
+$fields[] = array('element' => 'text', 'name' => 'status', 'label' => 'Status', 'size' => 50, 'rows' => 3, 'required');
+
+if (FORM::complete($fields)) {
+	TWITTER::setStatus(PARAM::value('twuser'), PARAM::value('twpass'), PARAM::value('status'));
+}
+
+?>

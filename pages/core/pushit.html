@@ -1,0 +1,14 @@
+<?php
+ob_clean();
+$path=param("path");
+$push=param("pushpull")=="push"?"push":"pull";
+$user = explode("@",get_auth_info('CHDS_login'));
+$user=$user[0];
+exec("/usr/bin/sudo /usr/local/bin/cms $push '$path' $user"." 2>&1", $output);
+echo "<span style='font-family:arial;font-size:12px;'>";
+foreach ($output as $item){
+	echo "$item<br />";
+}
+echo "</span>";
+exit();
+?>

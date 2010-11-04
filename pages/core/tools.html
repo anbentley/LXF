@@ -1,0 +1,63 @@
+<?php
+page('title', 'Development Tools');
+
+if (function_exists('membersOnly')) membersOnly();
+
+$tool = param('tool');
+
+echo div('');
+DEVTOOLS::nav();
+page('environment', array('tool' => $tool));
+
+switch ($tool) {
+	case 'switch':
+		DEVTOOLS::switchServers();
+		break;
+		
+	case 'search':
+		DEVTOOLS::siteSearch();
+		break;
+		
+	case 'compare':
+		DEVTOOLS::compare();
+		break;
+		
+	case 'doc':
+		PHPDOC::main();
+		break;
+		
+	case 'phpinfo':
+		DEVTOOLS::showPHPinfo(param('name'));
+		break;
+		
+	case 'check':
+		DEVTOOLS::versionCheck();
+		break;
+		
+	case 'googlesafe':
+		DEVTOOLS::googlesafe();
+		break;
+		
+	case 'recent':
+		DEVTOOLS::displayRecent();
+		break;
+		
+	case 'tools':
+	default:
+		echo h1('', 'Developer Tools');
+		echo p('', 'The following tools are available to developers to aid them in implementation:');
+		
+		$tools = DEVTOOLS::toolList();
+		echo dlist();
+		foreach ($tools as $tool => $details) {
+			echo dt('', LINK::local($tool, $details['name'], LINK::rtn()));
+			echo dd('', $details['description']);
+		}
+		echo dl('/');
+		break;
+}	
+
+echo div('/');
+page('environment', null);
+
+?>

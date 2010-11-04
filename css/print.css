@@ -1,0 +1,38 @@
+@media print {
+
+body {
+  background: white !important;
+}
+
+#nav, #footer, #subnav, form {
+  display: none;
+}
+
+#content {
+  margin-left: 0px;
+  width: auto;
+  margin-right: 0px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+a {
+    color: black;
+	text-decoration: none;
+}
+
+h1, h2, h3, dt {
+  page-break-before: auto;
+  page-break-after: avoid !important;
+}
+
+div, p, dt, dd, table, ol, ul, dl, img {
+  page-break-inside: avoid !important;
+}
+
+.pagebreak {
+	page-break-before: always;
+	margin-bottom: 20px;
+}
+
+}

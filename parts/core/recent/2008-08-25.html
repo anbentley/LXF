@@ -1,0 +1,45 @@
+<?php
+$changes = array(
+	'cm' => array(
+		'Code Cleanup'	=> 'Many files have been changed, but most changes involve replacing old function calls with new ones.
+							This is on-going, so if any odd behavior is noticed, it should be reported.',
+		'Query Removal' => 'Work continues on this so that eventually all queries will be in class files and not in pages.
+							As we move forward we need to evaluate new and old queries to see if we can combine functions.',
+	),
+	'af' => array(
+		'DEBUG::on'							=> 'equivalent to debug()',
+		'DEBUG::off'						=> 'equivalent to !debug()',
+		'HTML::closeTag'					=> 'generates appropriate HTML',
+		'HTML::openTag'						=> 'generates appropriate HTML',
+		'HTML::tag'							=> 'generates appropriate HTML',
+	),
+
+	'uf' => array(
+		'LINK::source'						=> 'repair to selected processing',
+		'PHPDOC::displayItem'				=> 'fixed method links when name included &lsquo;class&rsquo;',
+		'FILE_MANAGER::fileList'			=> 'fix to icon display',
+		'FORM::getFieldPairs'				=> 'enhancement to composite field returned values as processed results such as timestamp',
+		'SEARCH::findline'					=> 'corrected show matches function when not case sensitive',
+		'FORM::text'						=> 'fix to value processing',
+	),
+
+	'rf' => array(
+		'LINK::addParams'					=> 'updated all sites to remove this old function',
+		'form'								=> 'removed old function (appeared after FORM class in same file)',
+	),
+
+	'al' => array(
+	),
+	'ul' => array(
+		'CACHE'								=> 'general code cleanup',
+		'FILE'								=> 'general code cleanup',
+		'FORM'								=> 'general code cleanup and use of new tag functions to standardize form HTML',
+		'HTML'								=> 'general code cleanup and additional functions',
+		'INIT'								=> 'general code cleanup',
+		'UTIL'								=> 'general code cleanup',
+	),
+	
+	'tl' => array(
+	),
+);
+?>
