@@ -487,7 +487,7 @@ function queryToTable($array, $options=array()) {
 	if (!is_array($array)) return '';
     
     $defaults = array('class' => 'basictable');
-	$options = UTIL::merge($defaults, $options);
+	$options = smart_merge($defaults, $options);
 	
 	$result = tr('class:titles');
 	$titles = array_keys($array[0]);

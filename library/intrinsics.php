@@ -487,6 +487,25 @@ function alias($original) {
 }
 
 /**
+ * Construct a secret code partially based on date.
+ *
+ * @param	$prefix		an optional prefix to add to the date value for the code construction.
+ * @param	$when		an optional date to use instead of time().
+ * @param	$max		an optional length limit on the key.
+ * @return	the secret code.
+ */
+function secretcode($prefix='', $when=null, $max=0) {
+	if ($when == null) $when = time();
+	
+	$key = md5($prefix.date('Y-m-d', $when));
+	
+	// shorten it if necessary
+	if ($max != 0) $key = substr($key, 0, $max);
+	
+	return $key;
+}
+
+/**
  * Perform a 'smart' merge on two arrays. Existence of a value with a numeric key implies a 'true' value.
  * In other words, array(3 => 'alternate') is considered to mean array('alternate' => true).
  *

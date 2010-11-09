@@ -4,7 +4,8 @@
  * META manages metadata about files.
  * 
  * @author	Alex Bentley
- * @history	3.0		major rewrite of functions to streamline processing
+ * @history	3.1		removal of INIT class dependence
+ *			3.0		major rewrite of functions to streamline processing
  *			2.0		improved XML metadata handling of & characters.
  *			1.6		removed dependence on ABOUT class
  *			1.5		updated documentation
@@ -25,7 +26,7 @@ class META {
 function metafile($name) {	
 	if (!is_dir($name)) $name = dirname($name);
 
-	return $name.'/'.INIT::get('meta-file');
+	return $name.'/'.get('meta-file');
 }
 
 /**

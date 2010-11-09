@@ -163,6 +163,31 @@ function head($version) {
 }
 
 /**
+ * returns a usable HTML name
+ *
+ * @param	$name	the string to begin with
+ * @return	the cleaned up name string
+ */
+function goodName($name) {
+	return $name;
+	
+	$alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+	$good = str_split($alphabet.'0123456789-_:.', 1);
+	
+	if (!in_array(substr($name, 0, 1), str_split($alphabet))) $name = 'N'.$name;
+	
+	$expandedname = str_split($name, 1);
+	
+	$name = '';
+	foreach ($expandedname as $value) {
+		if (!in_array($value, $good)) $value = '_';
+		$name .= $value;
+	}
+	
+	return $name;
+}
+
+/**
  * Converts pt size font sizes to relative sizes
  *
  * @param  $fs		the pt size to convert.

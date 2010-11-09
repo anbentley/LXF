@@ -7,7 +7,11 @@ div.image-block {
 	border: none;
 
 	img {
-		border: none;
+		border-style:solid;
+		border-color:transparent;
+		border-width: 1px;
+		margin: 0;
+		padding: 0;
 	}
 
 	div.left-column {
