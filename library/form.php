@@ -43,7 +43,8 @@
  * The function getFieldPairs($field) can be used to obtain the name => value pairs returned by the form
  *
  * @author	Alex Bentley
- * @history	7.0		embedded support for compound names in form creation and verification
+ * @history	7.1		fully implemented filter_var for data validation
+ *			7.0		embedded support for compound names in form creation and verification
  *			6.0     Converted all tag calls to short tags
  *          5.19    updated the processing of the action option
  *          5.18	Fixed a comparison bug where an invalid value would match a 0 value
@@ -1508,7 +1509,7 @@ function getFieldType($name, $type='') {
 }
 
 /**
- * Uses regular expressions to validate various field types.
+ * Uses filter_var to validate various field types.
  *
  * @param	$name	the name of this field.
  * @param	$value	the submitted value.
@@ -1528,34 +1529,20 @@ function validateField($def, $value) {
 			break;
 			
 		case 'number':
-			$valid = filter_var($value, FILTER_VALIDATE_NUMBER_INT);
-			if (!$valid) {
-				$valid = $invalidLabel;
-			} else {
-				$valid = true;
-				
-				$min = $max = true;
-				$dmin = $dmax = null;
-				
-				if (array_key_exists('min', $def)) $dmin = $def['min'];
-				if (($dmin != null) && ($dmin > $value)) $min = false;
-				
-				if (array_key_exists('max', $def)) $dmax = $def['max'];
-				if (($dmax != null) && ($dmax < $value)) $max = false;
-				
-				if (!$min || !$max) {
-					$valid = $invalidLabel;
-					if (!$min) {
-						if (!$max) {
-							$valid .= $dmin.' to '.$dmax;
-						} else {
-							$valid .= '&gt; '.$dmin;
-						}
-					} else {
-						$valid .= '&lt; '.$dmax;
-					}
-				}
-			}	
+			$options = array();
+			if (array_key_exists('min', $def)) $options['min_range'] = $def['min'];		
+			if (array_key_exists('max', $def)) $options['max_range'] = $def['max'];
+			
+			$filter = array(
+				'filter' => FILTER_VALIDATE_INT,
+				'flags' => FILTER_REQUIRE_SCALAR, 
+			);
+			if ($options) $filter['options'] = $options;
+			
+			$valid = filter_var($value, $filter);
+			if (!$valid) $valid = $invalidLabel;
+			break;
+			
 			break;
 			
 		case 'date':
