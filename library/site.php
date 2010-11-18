@@ -54,6 +54,7 @@ function makePage($options=array()) {
 		'packages' => array(
 			'framework' => str_replace(dirname(getcwd()), '..', dirname($librarypath)).'/',
 		),
+		'extensions' => array(),
 	);
 		
 	$options = strtoarray($options);
@@ -68,7 +69,7 @@ function makePage($options=array()) {
 	
 	$includeDirs[] = ini_get('include_path');
 	
-	$packages = get('packages');
+	$packages = array_merge(get('packages'), get('extensions'));
 	if (is_array($packages)) $includeDirs = array_merge($includeDirs, $packages);
 	
 	// build usable path
@@ -141,7 +142,8 @@ function getIncludeDirectories($includeDir) {
 	$sections = explode('/', page());
 	$site = page('site', '/');
 		
-	$packages = get('packages');
+	$packages = array_merge(get('packages'), get('extensions'));
+	
 	if (is_array($packages)) {
 		foreach ($packages as $package) {
 			$basepaths[] = $package.$includeDir;
@@ -502,7 +504,7 @@ function file($filename, $base='', $default='') {
 	
 	$filedirs = array($site.$base, $base);
 	
-	$packages = get('packages');
+	$packages = array_merge(get('packages'), get('extensions'));
 	if (is_array($packages)) {
 		foreach ($packages as $path) {
 			$path = self::relative($path);
@@ -686,7 +688,7 @@ function set($name, $value='', $mode='set') {
 		
 		// now load any package settings that make exist, but preference goes to the local settings
 		if (array_key_exists('packages', $all)) {
-			$confdirs = $all['packages'];
+			$confdirs = array_merge($all['packages'], $all['extensions']);
 			foreach ($confdirs as $confdir) {
 				$confdir .= $all['configuration'].'/settings/';
 				if ($handle = @opendir($confdir)) {
@@ -1120,14 +1122,14 @@ function param ($var, $part='value', $def='') {
  *
  * @param  $var		the data to format and display.
  */
-function display ($var, $label='', $where='') {	
+function display ($var, $label='', $where='', $raw=false) {	
 	$result = '';
-	if ($label != '') $result .= '<h3>'.$label.'</h3>';
+//	if ($label != '') $result .= $label.'<br />';
 	
 	$type = gettype($var);
 	
 	if ($type == 'string') {
-		if (is_numeric($var) && ($var === 0))  {
+		if (is_numeric($var) && (($var === 0) || (intval($var) === $var)))  {
 			$type = 'integer';
 			
 		} else if ($var === '') {
@@ -1150,7 +1152,6 @@ function display ($var, $label='', $where='') {
 		case 'array':
 			$rslt = '';
 			append($rslt, '<table class="basictable">');
-			if ($label != '') append($rslt, '<tr class="title"><td class="title" colspan="2">'.$label.'</td></tr>');				
 			// evaluate this array and see if it is a repeated-array
 			$repeated = true;
 			
@@ -1189,25 +1190,31 @@ function display ($var, $label='', $where='') {
 
 				$colspan = count($var);
 
-				$rslt = '';
-				append($rslt, '<tr><td colspan="'.$colspan.'">Repeated Array</td></tr>');
+				$raw = true;
 				append($rslt, '<tr class="titles">');
-				
-				foreach (array_keys($var) as $item) append($rslt, '<td class="title" title="array key">'.$item.'</td>');
+				$vr = $var;
+				$vf = array_shift($vr);
+				foreach (array_keys($vf) as $item) append($rslt, '<td class="title" title="array key">'.$item.'</td>');
 				append($rslt, '</tr>');
 
 				foreach ($var as $repeat) {
 					append($rslt, '<tr>');
-					foreach ($repeat as $key => $item) append($rslt, '<td>'.display($item, $key, true).'</td>');
+					foreach ($repeat as $key => $item) {
+						$v = display($item, '', true, $raw);
+						$style = '';
+						if (intval($v) === $v) $style = ' style="text-align: right;"';
+						append($rslt, '<td'.$style.'>'.display($item, '', true, $raw).'</td>');
+					}
 					append($rslt, '</tr>');
 				}
 				append($rslt, '</table>');
-				$var = $rslt;
+				$var = $rslt;				
 				break;
 			}
 			
+			if ($label != '') append($rslt, '<tr class="title"><td class="title" colspan="2">'.$label.'</td></tr>');				
 			foreach ($var as $key => $value) {
-				append($rslt, '<tr><td class="key" title="array key" style="margin: 0 !important;">'.$key.'</td><td>'.display($value, $name, true).'</td></tr>');
+				append($rslt, '<tr><td class="key" title="array key" style="margin: 0 !important;">'.$key.'</td><td>'.display($value, $key, true, $raw).'</td></tr>');
 			}
 			append($rslt, '</table>');
 			$var = $rslt;
@@ -1223,7 +1230,7 @@ function display ($var, $label='', $where='') {
 				foreach ($objVars as $key => $value) {
 				   if (is_string($value)) $value = (trim($value) == '') ? '[empty]' : $value;
 						append($rslt, tr().td('class:'.$key));
-						if (in_array(gettype($value), array('array', 'boolean', 'object', 'resource'))) $value = display($value, '', true);
+						if (in_array(gettype($value), array('array', 'boolean', 'object', 'resource'))) $value = display($value, '', true, $raw);
 						append($rslt, td('', $value).tr('/'));
 				   }
 				   $arrObjMethods = get_class_methods(get_class($var));
@@ -1322,7 +1329,7 @@ function display ($var, $label='', $where='') {
 			break;
 			
 		case 'string':
-			$var = str_replace(array("\n", '<br /><br />'), '<br />', str_replace(' ', '&nbsp;', htmlencode($var))); 
+			if (!$raw) $var = str_replace(array("\n", '<br /><br />'), '<br />', str_replace(' ', '&nbsp;', htmlencode($var))); 
 			break;
 			
 		case 'money':
@@ -1346,20 +1353,89 @@ function display ($var, $label='', $where='') {
 }
 
 /**
- * Determines if debug mode is enabled.
+ * Determines if debug mode is enabled or can save or display values.
  *
- * @param	$newstate	an optional boolean that can change the state of debug on the fly.
- * @return	the state of debug and set the error reporting level.
+ * @param	$value	a value to process or a boolean that can change the state of debug on the fly.
+ * @param	$label	the label to identify a value
+ * @param	$mode	can be add|dump|trace|show
+ * @param	$where	default is to echo the result, 'return' returns the result
+ * @return	the state of debug and set the error reporting level, or a display of the values.
  */
-function debug($newstate=null) {
-	if (!is_null($newstate)) set_session('debug-enabled', $newstate);
+function debug ($value=null, $label='', $mode='add', $where='') {
+	static $store = array();
 	
-	$state = get_session('debug-enabled', 0);
-	error_reporting($state);
+	// determine current debug state
+	$state = unserialize(get_session('debug-enabled', null));
+	if ($state == null) { // never been set
+		$state = (basename($_SERVER['SCRIPT_NAME']) == 'debug.php');
+		set_session('debug-enabled', $state);
+		error_reporting($state);
+	}
 	
-	return $state;
+	$numargs = func_num_args();
+	if ($numargs == 0) {
+		$state = unserialize(get_session('debug-enabled', 0));
+		return $state;
+	}
+	
+	if (($numargs == 1) && is_bool($value)) {
+		set_session('debug-enabled', $value);
+		error_reporting($value);
+		return $value;
+	}
+	
+	
+	$backtrace = debug_backtrace();
+	$caller = array_shift($backtrace);
+	$cwd = dirname(getcwd());
+	
+	switch ($mode) {
+		case 'add':
+			$store[$label] = $value;
+			break;
+			
+		case 'dump':
+			if (!$state) break;
+			
+			$result = div('class:debug', display($store, 'dump', 'return'));
+			$store = array();
+			if ($where == 'return') return $result;
+			echo $result;
+			break;
+			
+		case 'trace':
+			$steps = array();
+			$steps[] = array('line' => $caller['line'], 'file' => str_replace($cwd, '', $caller['file']), ' ' => ' Trace started');
+			
+			foreach ($backtrace as $entry) {
+				$entry = array_merge(array('function' => '', 'class' => '', 'object' => '', 'type' => '', 'args' => array()), $entry);
+				$args = '';
+				foreach ($entry['args'] as $arg) append($args, '\''.$arg.'\'', ', ');
+				if ($entry['object'] != '') {
+					$element = '('.$entry['class'].')'; //.(string)$entry['object'];
+				} else {
+					$element = $entry['class'];
+				}
+				
+				$steps[] = array('line' => $entry['line'], 'file' => str_replace($cwd, '', $entry['file']), ' ' => $element.$entry['type'].$entry['function'].'('.$args.')');
+			}
+			$store[$label] = $steps;
+			break;
+			
+		case 'count':
+			return count($store); 
+			break;
+			
+		case 'show':
+		default:
+			if (!$state) break;
+			
+			$result = div('class:debug', display($value, $label, 'return'));
+			if ($where == 'return') return $result;
+			echo $result;
+	}
 }
-
+	
 /**
  * This function forces an HTTP redirect to the specified value if not already so.
  * 
