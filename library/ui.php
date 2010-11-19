@@ -11,7 +11,7 @@
 class UI {
 
 function editableInfoBlock($title, $detailCode, $allowed, $summary=array()) {
-	$results = HTML::openTag('div', array('class' => 'infoBlock'));
+	$results = div('class:infoBlock');
 	if ($allowed) {
 		@list($page, $params) = $summary;
 		$details = $params;
@@ -25,7 +25,7 @@ function editableInfoBlock($title, $detailCode, $allowed, $summary=array()) {
 			$link = '';
 		}
 	}
-	$results .= h3(array('class' => 'infoTitle'), $title.$link);
+	$results .= h3('class:infoTitle', $title.$link);
 	return $results;
 	
 }
@@ -77,7 +77,7 @@ function selectBar($contents, $direction='right') {
 function decisionButton($link, $selected=false, $return=false) {
 	$class = 'admin_select_button';
 	if ($selected) $class .= '_on';
-	$result = div(array('class' => $class), $link);
+	$result = div('class:'.$class), $link);
 	if ($return) return $result;
 	echo $result;
 }
@@ -85,7 +85,7 @@ function decisionButton($link, $selected=false, $return=false) {
 function selectButton($link, $selected=false, $return=false) {
 	$class = 'select_button';
 	if ($selected) $class .= '_on';
-	$result = div(array('class' => $class), $link);
+	$result = div('class:'.$class), $link);
 	if ($return) return $result;
 	echo $result;
 }
@@ -94,9 +94,9 @@ function decisionButton2($link, $selected=false, $return=false) {
 	$class = 'admin_select_button2';
 	if ($selected) $class .= '_on';
 	if (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 6.0')) {
-		$result = '<div class="'.$class.'"><span style="padding-top: 0;">'.$link.'</span></div>';
+		$result = div('class:'.$class, span('style:padding-top: 0;', $link));
 	} else {
-		$result = '<div class="'.$class.'"><span>'.$link.'</span></div>';
+		$result = div('class:'.$class, span('', $link));
 	}
 	if ($return) return $result;
 	echo $result;
@@ -105,7 +105,7 @@ function decisionButton2($link, $selected=false, $return=false) {
 function selectButton2($link, $selected=false, $return=false) {
 	$class = 'select_button2';
 	if ($selected) $class .= '_on';
-	$result = '<div class="'.$class.'"><span>'.$link.'</span></div>';
+	$result = div('class:'.$class, span('', $link));
 	if ($return) return $result;
 	echo $result;
 }

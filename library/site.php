@@ -611,7 +611,7 @@ class SITE {
 		$pt = page('title'); // this needs to be first to force the virtual page processing
 		
 		$site = page('site');
-		$metadata = get('site-metadata');
+		$metadata = get('site-metadata', array());
 		if (array_key_exists($site, $metadata)) {
 			$page = $metadata[$site];
 		} else {
