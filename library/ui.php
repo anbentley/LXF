@@ -77,7 +77,7 @@ function selectBar($contents, $direction='right') {
 function decisionButton($link, $selected=false, $return=false) {
 	$class = 'admin_select_button';
 	if ($selected) $class .= '_on';
-	$result = div('class:'.$class), $link);
+	$result = div('class:'.$class, $link);
 	if ($return) return $result;
 	echo $result;
 }
@@ -85,7 +85,7 @@ function decisionButton($link, $selected=false, $return=false) {
 function selectButton($link, $selected=false, $return=false) {
 	$class = 'select_button';
 	if ($selected) $class .= '_on';
-	$result = div('class:'.$class), $link);
+	$result = div('class:'.$class, $link);
 	if ($return) return $result;
 	echo $result;
 }
