@@ -1,0 +1,17 @@
+<?php 
+echo td('/'); // column-one or single-column
+
+$sbf = page('sidebar');
+if (file_exists($sbf) && is_file($sbf)) {
+	ob_start();
+	include $sbf;
+    $sideBarContent = ob_get_clean();
+    
+	echo td('id:column-two', div('class:sidebar', $sideBarContent)); // add the sidebar if one is necessary
+}
+
+echo tr('/');
+echo table('/');
+echo div('/');
+
+?>

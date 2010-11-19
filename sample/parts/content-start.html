@@ -1,0 +1,10 @@
+<?php
+LINK::name('top');
+$sbf = page('sidebar');
+$class='single-column';
+if ($sbf) $class = 'column-one';
+
+echo div('id:content');
+echo table('id:inner-div');
+echo tr('').td('id:'.$class);
+?>

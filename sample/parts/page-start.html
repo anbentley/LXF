@@ -1,0 +1,7 @@
+<?php
+$jsol = HTML::javascript('page-onload');
+
+if ($jsol) $jsol = 'onload:'.$jsol;
+echo tag('body', $jsol);
+echo div('id:body');
+?>
