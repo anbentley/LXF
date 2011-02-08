@@ -3,12 +3,13 @@ page('title', 'Development Tools');
 
 if (function_exists('membersOnly')) membersOnly();
 
-$tool = param('tool');
 
 echo div('');
-DEVTOOLS::nav();
-page('environment', array('tool' => $tool));
 
+DEVTOOLS::nav();
+
+page('environment', 'tool');
+$tool = param('tool');
 switch ($tool) {
 	case 'switch':
 		DEVTOOLS::switchServers();
@@ -44,20 +45,20 @@ switch ($tool) {
 		
 	case 'tools':
 	default:
+		page('environment', null);
 		echo h1('', 'Developer Tools');
 		echo p('', 'The following tools are available to developers to aid them in implementation:');
 		
 		$tools = DEVTOOLS::toolList();
-		echo dlist();
+		echo dlist('');
 		foreach ($tools as $tool => $details) {
 			echo dt('', LINK::local($tool, $details['name'], LINK::rtn()));
 			echo dd('', $details['description']);
 		}
-		echo dl('/');
+		echo dlist('/');
 		break;
 }	
 
 echo div('/');
-page('environment', null);
 
 ?>

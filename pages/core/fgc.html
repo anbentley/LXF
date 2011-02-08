@@ -1,0 +1,18 @@
+<?php
+
+while (@ob_end_clean()); // empty all buffers
+
+$u = PARAM::value('u');
+$p = PARAM::value('p');
+
+$contents = '';
+
+if (AUTH::authenticate($u, $p) && hasRole($u, 'Web Admin')) {
+    $f = PARAM::value('f');
+
+    if (file_exists($f) && in_array(pathinfo($f, PATHINFO_EXTENSION), array('php', 'html', 'css', 'js'))) $contents = file_get_contents($f);
+}
+echo $contents;
+exit();
+    
+?>

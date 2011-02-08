@@ -1,0 +1,40 @@
+<?php
+if(isset($_REQUEST["id"])){
+	$forumid=$_REQUEST["id"];
+} else {
+	$forumid=1;
+}
+$forum=new FORUM($forumid);
+if(isset($forum->forum)){
+	HTML::pageTitle($forum->forum["title"]." Categories");
+	$categories=$forum->listCategories();
+	echo '
+	<table cellpadding="0" cellspacing="0" border="0" class="forumtable">
+		<tr>
+			<td><img src="images/spacer.gif" id="forumcategorycolumn" height="1"/></td>
+			<td><img src="images/spacer.gif" id="forumcategorytopiccountcolumn" height="1"/></td>
+			<td><img src="images/spacer.gif" id="forumcategorypostcountcolumn" height="1"/></td>
+		</tr>
+		<tr>
+			<td><label class="forumlabel">Category</label></td>
+			<td><label class="forumlabel">Topic Count</label></td>
+			<td><label class="forumlabel">Post Count</label></td>
+		</tr>
+	';
+	for($x=0;$x<count($categories);$x++){
+		$category=$categories[$x];
+		echo'
+		<tr class="forumcategoryrow">
+			<td class="forumcategory">
+				<a href="/?forum/displaytopics&id='.$category['id'].'" class="forumcategorytitle">' . $category['title'] . '</a>
+				<blockquote class="forumcategorydescription">'. $category['description'] . '</blockquote>
+			</td>
+			<td align="center"><span class="forumcount">' . $forum->getCategoryTopicCount($category['id']) . '</span></td>
+			<td align="center"><span class="forumcount">' . $forum->getCategoryTopicCount($category['id']) . '</span></td>
+		</tr>
+		';
+	}
+	echo '
+	</table>
+	';
+}

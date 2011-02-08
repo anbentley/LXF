@@ -42,7 +42,11 @@ function get($n, $d='') {
 function set($n, $v) {
 	set($n, $v);
 }
-	
+
+function clear($n) {
+	set($n, NULL);
+}
+
 }
 
 ?>

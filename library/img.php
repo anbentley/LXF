@@ -1,30 +1,30 @@
 <?php
 
 /**
- * IMG encapsulates all the image manipulation functions.
- * All functions are intended to be used statically.
- * 
- * @author	Alex Bentley
- * @history	3.2		new forms of options
- *			3.1		fix to generalize the serve function handling of buffering
- *			3.0		new box-position attribute
- *			2.19	fix to getScale function
- *			2.18	all images are not absolute links due to redirect issues
- *			2.17	fix to scale
- *			2.16	fix to scaling calculation
- *			2.15	standardized tag generation
- *			2.14	integrated icon support
- *			2.13	updated documentation
- *			2.12	removed dependence on ABOUT class
- *			2.11	new function getscaledsize
- *			2.10	removed deprecated calls
- *			2.9		provide support for inline images
- *			2.8		updated serving processing
- *			1.0		initial release
- * 
- */
+* IMG encapsulates all the image manipulation functions.
+* All functions are intended to be used statically.
+* 
+* @author	Alex Bentley
+* @history	3.2		new forms of options
+*			3.1		fix to generalize the serve function handling of buffering
+*			3.0		new box-position attribute
+*			2.19	fix to getScale function
+*			2.18	all images are not absolute links due to redirect issues
+*			2.17	fix to scale
+*			2.16	fix to scaling calculation
+*			2.15	standardized tag generation
+*			2.14	integrated icon support
+*			2.13	updated documentation
+*			2.12	removed dependence on ABOUT class
+*			2.11	new function getscaledsize
+*			2.10	removed deprecated calls
+*			2.9		provide support for inline images
+*			2.8		updated serving processing
+*			1.0		initial release
+* 
+*/
 class IMG {
- 
+
 /**
  * Returns an array of default values for images.
  *
@@ -80,16 +80,21 @@ function tag ($src, $options=array()) {
 	$options = as_array($options);
 	
 	$def = smart_merge(self::defaults(), $options);
-
-	if (!str_begins($src, '?')) {
-		$src = SITE::file($src);
-		if (!file_exists($src)) return ''; // no image if no file
+	$pkg = get('packages');
+	$fw = relative($pkg['framework']);
+	
+	if (!file_exists($src) && !SITE::file($src)) return ''; // no image if no file
+	$relsrc = relative($src);
+	if (str_begins($relsrc, '../')) {
+		$def['serve'] = true;		
 	}
+	
+	if (!file_exists($src)) $src = SITE::file($src);
 	
 	$def['src'] = $src;
 	
 	list($w, $h) = self::size($src);
-
+	
 	if ($def['box'] != 0) {
 		if ($w > $h) { // use the larger of the two to define the scale
 			$def['width'] = $def['box'];
@@ -99,40 +104,40 @@ function tag ($src, $options=array()) {
 			$def['height'] = $def['box'];
 		}
 	}
-    
-    // if one dimension is not set force the scale to 1 so the other will be the basis
-    if ((($def['width'] == 0) || ($def['height'] == 0)) && ($def['scale'] == 0)) $def['scale'] = 1;
 	
-    if (($def['width'] == 0) && ($def['height'] == 0)) {
-        $def['width'] = $w;
-        $def['height'] = $h;
-    }
-    
+	// if one dimension is not set force the scale to 1 so the other will be the basis
+	if ((($def['width'] == 0) || ($def['height'] == 0)) && ($def['scale'] == 0)) $def['scale'] = 1;
+	
+	if (($def['width'] == 0) && ($def['height'] == 0)) {
+		$def['width'] = $w;
+		$def['height'] = $h;
+	}
+	
 	if ($def['scale'] == 1) $def['scale'] = self::getscale($src, $def['width'], $def['height']);
 	
 	if (($def['scale'] > 1) && $def['within']) $def['scale'] = 1; // don't rescale if within is set
-
+	
 	if ($def['scale'] != 0) {
-        $def['width']  = (int)($w * $def['scale']);
-        $def['height'] = (int)($h * $def['scale']);
-    }
-        
+		$def['width']  = (int)($w * $def['scale']);
+		$def['height'] = (int)($h * $def['scale']);
+	}
+	
 	if ($def['url'] != 'relative') {
 		$def['src'] = page('server').$def['src'];
+		
 	} else {
 		if ($def['inline']) {
 			$def['src'] = self::inlinesrc($src, $def['width'], $def['height']);
 		} else if ($def['serve']) {
-			$src = urldecode($src);
-			$dir = FILE::mapDir(FILE::path($src));
-			$file = FILE::filename($src);
-            $uri = page('uri');
-			$def['src'] = LINK::url(substr($uri, 0, strpos($uri, '?')).'?'.get('file-serve'), array('drm' => $dir, 'w' => $def['width'], 'h' => $def['height'], 'f' => $file));
+			//$src = urldecode($src);			
+			$uri = page('uri');
+			$src = str_replace(get('site-directory'), '', $src);
+			
+			$def['src'] = LINK::url(substr($uri, 0, strpos($uri, '?')).'?'.get('file-serve'), array('drm' => dirname($src), 'w' => $def['width'], 'h' => $def['height'], 'f' => basename($src)));
 		} else {
 			$def['src'] = str_replace(' ', '%20', $def['src']);
 		}
 	}
-	
 	// see if we need to put the image in a box margin: T R B L
 	if ($def['box'] != 0) {
 		$difw = $def['box'] - $def['width'];
@@ -143,7 +148,7 @@ function tag ($src, $options=array()) {
 		$dift = ceil($difh/2);
 		$difb = floor($difh/2);
 		
-        $margin = 'margin:';
+		$margin = 'margin:';
 		switch ($def['box-position']) {
 			case 'bottom-right':    $edges = array($difh, 0,     0,     $difw); break;
 			case 'bottom-center':   $edges = array($difh, $difr, 0,     $difl); break;
@@ -156,19 +161,18 @@ function tag ($src, $options=array()) {
 			case 'top-right':		$edges = array(0,     $difw, $difh, 0);     break;
 			case 'top-center':      $edges = array(0,     $difl, $difh, $difr);	break;
 			case 'top-left':		$edges = array(0,     0,     $difh, $difw); break;
-            
+				
 			default:                $edges = array();     $margin = '';         break;
 		}
-        
-        foreach ($edges as $edge) append($margin, $edge.'px', ' ');
-        if ($margin != '') $def['style'] .= ' '.$margin.';';
+		
+		foreach ($edges as $edge) append($margin, $edge.'px', ' ');
+		if ($margin != '') $def['style'] .= ' '.$margin.';';
 	}
 	
 	$attrs = array();
-	
 	$attrlist = array('src', 'class', 'id', 'height', 'width', 'alt', 'title', 'border', 'style', 'usemap');
 	foreach ($attrlist as $attr) $attrs[$attr] = $def[$attr];
-
+	
 	return tag('img', $attrs);
 }
 
@@ -248,31 +252,40 @@ function scaleToImage($file, $t_wd = 100, $t_ht = 100, $mime=null) {
 	
 	if ($mime == null) $mime = $image_info['mime']; // use mime type of original image if not specified
 	$supportedImages = array(
-        'image/gif'  => array('type' => IMG_GIF,  'function' => 'imagecreatefromgif',  'name' => 'GIF'),
-        'image/jpeg' => array('type' => IMG_JPG,  'function' => 'imagecreatefromjpeg', 'name' => 'JPEG'),
-        'image/png'  => array('type' => IMG_PNG,  'function' => 'imagecreatefrompng',  'name' => 'PNG'),
-        'image/wbmp' => array('type' => IMG_WBMP, 'function' => 'imagecreatefromwbmp', 'name' => 'WBMP'),
-    );
-    
-	$imgtypes = imagetypes();
-    if (array_key_exists($image_info['mime'], $supportedImages)) {
-        $si = $supportedImages[$image_info['mime']];
-        
-        if ($imgtypes & $si['type']) {
-            $o_im = $si['function']($file) ;
-        } else {
-            $ermsg = $si['name'].' images are not supported'.br();
-        }
-    } else {
-        $ermsg = $image_info['mime'].' images are not supported'.br();
-	}
+		'image/gif'  => array('type' => IMG_GIF,  'function' => 'imagecreatefromgif',  'name' => 'GIF'),
+		'image/jpeg' => array('type' => IMG_JPG,  'function' => 'imagecreatefromjpeg', 'name' => 'JPEG'),
+		'image/png'  => array('type' => IMG_PNG,  'function' => 'imagecreatefrompng',  'name' => 'PNG'),
+		'image/wbmp' => array('type' => IMG_WBMP, 'function' => 'imagecreatefromwbmp', 'name' => 'WBMP'),
+	);
 	
+	$imgtypes = imagetypes();
+	if (array_key_exists($image_info['mime'], $supportedImages)) {
+		$si = $supportedImages[$image_info['mime']];
+		
+		if ($imgtypes & $si['type']) {
+			$o_im = $si['function']($file) ;
+		} else {
+			$ermsg = $si['name'].' images are not supported'.br();
+		}
+	} else {
+		$ermsg = $image_info['mime'].' images are not supported'.br();
+	}
+		
 	if (!isset($ermsg)) {
 		$o_ht = imagesy($o_im);
 		$o_wd = imagesx($o_im);
-
-		$t_im = imageCreateTrueColor($t_wd, $t_ht);
-
+		if (($t_wd == $o_wd) && ($t_ht == $o_ht)) return $o_im;
+		
+		if ($image_info['mime'] == 'image/gif') {
+			$t_im = imageCreate($t_wd, $t_ht);
+			imagesavealpha($t_im, true);
+		} else {
+			$t_im = imageCreateTrueColor($t_wd, $t_ht);
+			imagesavealpha($t_im, true);
+		}
+		$trans_color = imagecolorallocatealpha($t_im, 255, 255, 255, 0);
+		imagefill($t_im, 0, 0, $trans_color);
+		
 		imageCopyResampled($t_im, $o_im, 0, 0, 0, 0, $t_wd, $t_ht, $o_wd, $o_ht);
 		imageDestroy($o_im);
 		return $t_im;
@@ -299,7 +312,6 @@ function scaleImage($o_file, $t_wd = 100, $t_ht = 100, $file=null, $mime=null) {
 	$t_im = self::scaleToImage($o_file, $t_wd, $t_ht, $mime);
 	if ($t_im != null) {
 		if ($file == null) header('Content-type: '.$mime);
-		
 		switch ($mime) {
 			case 'image/gif':	imageGIF($t_im, $file);                     break;
 			case 'image/jpeg':	imageJPEG($t_im, $file, 100);               break;
@@ -307,7 +319,7 @@ function scaleImage($o_file, $t_wd = 100, $t_ht = 100, $file=null, $mime=null) {
 			case 'image/wbmp':	imageWBMP($t_im, $file);                    break;
 			default:            $ermsg = $mime.' images are not supported'.br();
 		}
-
+		
 		imageDestroy($t_im);
 	}
 	return isset($ermsg)?$ermsg:NULL;
@@ -322,10 +334,17 @@ function scaleImage($o_file, $t_wd = 100, $t_ht = 100, $file=null, $mime=null) {
  * @return	any error that may have occured.
  */
 function serve($file, $w, $h) {
+	$unlink = '';
+	if (SECURE::checkEncryptionPolicy($file)) {
+		$temp = tempnam(sys_get_temp_dir(), basename($file));
+		FILE::decrypt($file, $temp);
+		$file = $temp;
+		$unlink = $temp;
+	}
+	
 	$image_info = self::size($file) ; // see EXIF for faster way
 	$mime = $image_info['mime'];
-	
-	while(@ob_end_clean());	// remove any prior buffers
+	ob_empty();	// remove any prior buffers
 	
 	// output all header data
 	header('Content-Disposition: inline; filename='.$file);  
@@ -333,9 +352,15 @@ function serve($file, $w, $h) {
 	header('Expires: 0');
 	header('Pragma: public');	
 	header('Last-Modified: '. gmdate('D, d M Y H:i:s', filemtime($file)) .' GMT');
-
+	
+	if (($w == 0) && ($h == 0)) { // don't rescale
+		list($w, $h) = self::size($file); // get actual values
+	}
 	self::scaleImage($file, $w, $h, null, $mime);
 	ob_end_flush(); // turn off buffering and output page data
+	
+	if ($unlink) @unlink($unlink);
+	
 	exit();
 }
 
@@ -349,13 +374,13 @@ function serve($file, $w, $h) {
 function imageData($im, $mime='image/jpeg') {
 	// extract imagedata
 	ob_start();
-		switch($mime) {
-			case 'image/gif':	imageGIF($im); break;
-			case 'image/jpeg':	imageJPEG($im, null, 100); break;
-			case 'image/png':	imagePNG($im, null, 9, PNG_NO_FILTER); break;
-			case 'image/wbmp':	imageWBMP($im, null); break;
-			default:
-		}
+	switch($mime) {
+		case 'image/gif':	imageGIF($im); break;
+		case 'image/jpeg':	imageJPEG($im, null, 100); break;
+		case 'image/png':	imagePNG($im, null, 9, PNG_NO_FILTER); break;
+		case 'image/wbmp':	imageWBMP($im, null); break;
+		default:
+	}
 	$img = ob_get_contents();
 	ob_end_clean();
 	return $img;
@@ -412,71 +437,119 @@ function image($file, $w, $h) {
  * Returns an appropriate icon based on type
  *
  * @param	$name	name of file or operation
- * @param	$type	{ op | ext | eil }
+ * @param	$type	{ op | ext | eil | control | other | button }
  * @return	returns the correct icon
  */
 function icon($name, $type='op', $options=array()) {
 	if (is_string($options)) $options = strtoarray($options);
 	
-	$file = '';
-	$iconoptions = array();
-	$defaulticons = array(
-		'op' => array(
-			'rename'    => 'Rename.gif',
-			'edit'      => 'Edit.gif',
-			'move'      => 'Move.gif',
-			'delete'    => 'Delete.gif',
-			'copy'      => 'Copy.gif',
-			'newfolder' => 'NewFolder.gif',
-			'newfile'   => 'NewFile.gif',
-		),
-		'ext' => array(
-			'Video'		=> array('3gp', 'm4v', 'mov', 'avi', 'mpg'),
-			'Picture'	=> array('jpg', 'png', 'psd', 'gif', 'tif', 'tiff', 'pict'),
-			'Text'		=> array('txt', 'rtf', 'rtfd', 'odt', 'xml', 'css', 'html'),
-			'Word'		=> array('doc', 'docx'),
-			'Audio'		=> array('mp3', 'mp4', 'wav', 'aac', 'flac'),
-			'PDF'		=> array('pdf'),
-			'RTF'		=> array('rtf', 'rtfd', 'rtfm'),
-			'Flash'		=> array('flv', 'swf'),
-			'Zip'		=> array('zip', 'gzip', 'tar', 'sit'),
-			'Presentation'	=> array('ppt'),
-			'Unknown'	=> array('*'),
-		),
-		'eil' => array(
-			'edit-icon'   => 'icon_edit.gif',
-			'delete-icon' => 'icon_delete.gif',
-			'add-icon'    => 'icon_add.gif',
-		),
-	);
-	$icons = array_merge($defaulticons, get('icons', array()));
-	if ($type == 'ext') {
-		if (is_dir($name)) {
-			$icon = 'Folder';
-		} else {
-			$ext = FILE::ext($name);
-			foreach ($icons['ext'] as $icon => $map) {
-				if (array_search($ext, $map) !== false) {
-					break;
-				}
+	$h = 0;
+	$w = 0;
+	switch ($type) {
+		case 'op':
+			$vi = 0;
+			$s = 20;
+			$hi = array_search($name, array('newfile', 'newfolder', 'move', 'rename', 'edit', 'copy', 'delete'));
+			break;
+			
+		case 'eil':
+			$vi = 1;
+			$s = 16;
+			$hi = array_search($name, array('add-icon', 'u1', 'u2', 'u3', 'edit-icon', 'xxxx', 'delete-icon'));
+			break;
+			
+		case 'ext':
+			$name = SITE::file($name);
+			if (is_dir($name)) {
+				$icon = 'Folder';
+			} else {
+				$fileext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+				$exts = array(
+					'Video'		=> array('3gp', 'm4v', 'mov', 'avi', 'mpg'),
+					'Picture'	=> array('jpg', 'png', 'psd', 'gif', 'tif', 'tiff', 'pict'),
+					'Text'		=> array('txt', 'rtf', 'rtfd', 'odt', 'xml', 'css', 'html'),
+					'Word'		=> array('doc', 'docx'),
+					'Audio'		=> array('mp3', 'mp4', 'wav', 'aac', 'flac'),
+					'PDF'		=> array('pdf'),
+					'RTF'		=> array('rtf', 'rtfd', 'rtfm'),
+					'Flash'		=> array('flv', 'swf'),
+					'Zip'		=> array('zip', 'gzip', 'tar', 'sit'),
+					'Presentation'	=> array('ppt'),
+					'Unknown'	=> array('*'),
+				);			
+				foreach ($exts as $icon => $map) if (in_array($fileext, $map)) break;
 			}
-		}
-		$file = HTML::siteFile('images/icons/ext/'.$icon.'.gif');
-		if (!file_exists($file)) $file = HTML::siteFile('images/icons/ext/Unknown.gif');
-		$iconoptions = array_merge(array('box' => 24), $options);
-		
-	} else { // other
-		if (array_key_exists($type, $icons)) $file = 'images/icons/'.$type.'/'.$icons[$type][$name];
-		$iconoptions = $options;
+			
+			$vi = 2;
+			$hi = array_search($icon, array('Unknown', 'Text', 'PDF', 'RTF', 'Word', 'Zip', 'Picture', 'Video', 'Flash', 'Audio', 'Presentation', 'Folder'));		
+			break;
+			
+		case 'control':
+			$vi = 3;
+			$s = 16;
+			$hi = array_search($name, array('begin-disabled', 'begin-on', 'begin-off', 'back-disabled', 'back-on', 'back-off', 'forward-disabled', 'forward-on', 'forward-off', 'end-disabled', 'end-on', 'end-off'));
+			break;
+			
+		case 'other':
+			$vi = 4;
+			$s = 16;
+			$hi = array_search($name, array('pi', 'folder', 'lock', 'question', 'check', 'film', 'info', 'tag', 'history', 'u9', 'excel'));
+			if ($hi === false) {
+				$vi = 5;
+				$hi = array_search($name, array('u0', 'empty-folder', 'u2', 'question-off', 'check-off', 'checked', 'u7', 'tag-off', 'history-off'));
+			}
+			if (str_begins($name, 'history')) $w = 28;
+			break;
+			
+		case 'button':
+			$vi = 6;
+			$s = 24;
+			$hi = array_search($name, array('rss', 'blog', 'twitter', 'site-twitter'));
+			break;
+			
+		case 'app':
+			$vi = 7;
+			$s = 32;
+			$hi = array_search($name, array('aal', 'fif'));
+			if ($name == 'fif') $h = 16;
+			break;
+			
+		default:
+			return;
 	}
-
-	return IMG::tag($file, $iconoptions);
+	if ($w == 0) $w = $s;
+	if ($h == 0) $h = $s;
+	
+	$t = $vi * 32 + floor((32-$h)/2);
+	$l = $hi * 32 + floor((32-$w)/2);
+	
+	$r = $l + $w;
+	$b = $t + $h;
+	
+	return self::slice('images/icon-grid.gif', $w, $h, $l, $t, array_merge(array('alt'=>$name, 'title'=>$name), strtoarray($options)));
 }
+
+function slice($file, $w, $h, $ho, $vo, $options=array()) {
+	$options = array_merge(array('alt'=>'image', 'title'=>'image'), strtoarray($options));
+	
+	return '<img '.
+				'src="?file&f=images/transparent.gif" '.
+				'width="'.$w.'" '.
+				'height="'.$h.'" '.
+				'style="'.
+					'background-image: url(?file&f='.$file.'); '.
+					'background-repeat: no-repeat; '.
+					'background-position: -'.$ho.'px -'.$vo.'px;"'.
+					'alt="'.$options['alt'].'" '.
+					'title="'.$options['title'].'" '.
+				' />';
+}
+
 
 } // end IMG class
 
 function img ($src, $options=array()) {
-    return IMG::tag($src, $options);
+	return IMG::tag($src, $options);
 }
 
 ?>

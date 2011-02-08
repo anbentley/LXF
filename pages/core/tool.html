@@ -1,0 +1,48 @@
+<?php
+
+if (function_exists('membersOnly')) membersOnly();
+
+
+$tool = PARAM::pagevalue();
+
+echo HTML::openTag('div');
+DEVTOOLS::nav2();
+
+
+switch ($tool) {
+	case 'search':
+		DEVTOOLS::siteSearch();
+		break;
+		
+	case 'doc':
+		PHPDOC::main();
+		break;
+		
+	case 'phpinfo':
+		DEVTOOLS::showPHPinfo(PARAM::value('name'));
+		break;
+		
+	case 'check':
+		DEVTOOLS::versionCheck();
+		break;
+		
+	case 'recent':
+		DEVTOOLS::displayRecent();
+		break;
+		
+	case 'tools':
+	default:
+		echo HTML::tag('h1', '', 'Developer Tools');
+		echo HTML::tag('p', '', 'The following tools are available to developers to aid them in implementation:');
+		
+		$tools = DEVTOOLS::toolList();
+		echo HTML::openTag('dl');
+		foreach ($tools as $tool => $details) {
+			echo HTML::tag('dt', LINK::local($details['url'], $details['name'], LINK::rtn()));
+			echo HTML::tag('dd', '', $details['description']);
+		}
+		echo HTML::closeTag('dl');
+		break;
+}	
+
+echo HTML::closeTag('div');

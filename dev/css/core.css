@@ -5,6 +5,13 @@
 	background-color: #DDD;
 }
 
+#dev-nav form, #dev-nav div.formend, #dev-nav div, #dev-nav label {
+	float: none;
+	display: inline;
+}
+
+
+
 #dev-nav a {
 	color: #222;
 	display: inline;

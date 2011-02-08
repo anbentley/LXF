@@ -1,0 +1,41 @@
+<?php
+	$user = get_auth_info('CHDS_login');
+	include("parts/iepng.html");
+	if ((PARAM::page()=="home") || HTML::hasSidebar()) {
+		echo '<div id="ui_containerhome">';
+	} else {
+		echo '<div id="ui_container">';
+	}
+
+	echo '<div id="ui_header"></div>';
+	echo '<div id="ui_title"><a href="#"><img src="images/ui_header.gif" height="70" width="655" alt=""  border=1/></a></div>';
+
+	if ($user != '') {
+		echo '<div id="ui_logininfo">';
+		LINK::local('fs:people/bio', 'account '.$user); 
+		echo '<br />';
+		LINK::local('auth/change', 'change password');
+		echo '<br />';
+		LINK::local('auth/logout', 'logout');
+		echo '</div>';
+	}
+	
+	echo '<div id="ui_menu">';
+		if (function_exists('membersOnly')) membersOnly();
+		LINK::local('chds:home', IMG::tag('images/ui_home_off.png', array('alt' => 'Home', 'id'=>'menu1')), array('onmouseover'=>'menuLink(this,"over")','onmouseout'=>'menuLink(this,"off")'));	
+	echo '</div>';
+	
+	echo '<div id="ui_contentshadow"><img src="images/ui_contentshadow.png" height="9" width="958" alt="" /></div>';
+
+	$site = 'dev:';
+	$tools = array(
+		'Developer Tools' => array('url' => "{$site}core/tools", 'title' => 'Overview of Developer Tools'),
+		'Versions' =>  array('url' => "{$site}core/check", 'title' => 'Version Check on Libraries'),
+		'Documentation' =>  array('url' => "{$site}core/doc", 'title' => 'PHP Library Documentation'),
+		'Installation' =>  array('url' => "{$site}core/phpinfo", 'title' => 'PHP Information'),
+		'Search' =>  array('url' => "{$site}core/search", 'title' => 'Search the Entire Site'),
+		'Recent' =>  array('url' => "{$site}core/recent", 'title' => 'Recent Changes to Libraries'),
+		'PHPMyAdmin' => array('url' => "http://$_SERVER[HTTP_HOST]/admin/phpMyAdmin", 'title' => 'Database Access'),
+	);
+?>
+

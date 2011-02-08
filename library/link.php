@@ -91,6 +91,7 @@ function defaults() {
 		'forward'       =>'',
 		'sid'           => '',
         'use-site'      => false,
+		'link-length'   => 0,		// maximum link length when using a default label, 0 means use original text
 	);
     
 	foreach(HTML::jsattributes() as $jsa) $defaults[$jsa] = '';
@@ -224,12 +225,20 @@ function tag ($page, $label='', $options=array()) {
 		$prefix = '';
     }
 	
-	if ($label == '') $label = urldecode($page);
-	
+	if ($label == '') {
+		$label = urldecode($page);
+		if ($options['link-length'] > 0) { // check to see if link text should be shortened.
+			$labellen = strlen($label);
+			if ($options['link-length'] < $labellen) {
+				$part = $options['link-length'] / 2;
+				$label = substr($label, 0, $part - 1).' &hellip; '.substr($label, $labellen - $part + 1, $part - 1);
+			}
+		}
+	}
 	$attrs = array_merge(array('href' => $prefix.$page), UTIL::extract_items(array('class', 'id', 'rel', 'style', 'target', 'title'), $options));
 	
 	// process any javascript options
-	foreach(HTML::jsattributes() as $jsa) $attrs[$jsa] = $options[$jsa];
+	foreach (HTML::jsattributes() as $jsa) $attrs[$jsa] = $options[$jsa];
 	
 	$result = tag('a', $attrs, $label);
 	
@@ -306,8 +315,11 @@ function local ($page, $label='', $options=array()) {
 function standard ($page, $setOption, $label='', $options='') {
     if (!in_array($setOption, array('absolute', 'external', 'internal', 'mailto', 'redirect'))) return false;
 	$options = smart_merge(array($setOption => true), $options);
-	if ($label == '') $label = $page;
-    
+	if ($label == '') {
+		$label = $page;
+		//if ($setOption == 'mailto') $label = str_replace('@', '&zwnj;@', $label);
+	}
+	
     return self::tag(self::url($page, array()), $label, $options);
 }
 
@@ -403,7 +415,7 @@ function name ($name, $label=' ', $options=array()) {
 function toName ($name, $label, $options=array()) {
 	$options = smart_merge(array('return' => false), $options);
 	$name = str_replace(array(',', '&', ' '), '', $name);
-	$result = tag('a', array('href' => '?'.str_replace('&', '&amp;', page('fullPage')).'#'.$name), $label);
+	$result = tag('a', array('href' => str_replace('&', '&amp;', page('request')).'#'.$name), $label);
 	
 	if ($options['return']) return $result;
     echo $result;
@@ -447,12 +459,16 @@ function form ($url, $label, $options=array()) {
 	$page = $page[0];
 	unset($params[0]);
 	
+	$result = '<form method="get" action="'.'?" enctype="application/x-www-form-urlencoded">';
+	append($result, '<input type="hidden" name="'.$page.'" value="" />', "\n");
+
 	foreach ($params as $param) {
 		list($p, $v) = explode('=', $param);
-		$field[] = 'element:text | hidden | name:'.$p.' | value:'.$v;
+		append($result, '<input type="hidden" name="'.$p.'" value="'.$v.'" />', "\n");
 	}
-		
-	return FORM::display($field, smart_merge(array('method' => 'post', 'action' => '?'.$page, 'submit' => $label), $options));
+	append($result, '<input type="submit" name="submit" value="'.$label.'" />', "\n");
+	append($result, '</form>', "\n");	
+	return $result;
 }
 
 /**
@@ -506,7 +522,7 @@ function course($course) {
 /**
  * Add parameters to a URL in a safe way (urlencoded parameter values).
  *
- * Supports global 'environment-params' adding those values to all urls if set.
+ * Supports global 'environment' adding those values to all urls if set.
  *
  * @param	$url		the url to add to.
  * @param	$params		a keyed array of parameters and values to add to the url.
@@ -521,7 +537,7 @@ function url($url, $params=array()) {
     $evp = array();
     foreach ((array)$ep as $pn) $evp[$pn] = param($pn);
     $params = array_merge($params, $evp);
-    //print_r($params);
+
     if (count($params)) {        
         foreach ($params as $name => $value) {            
             // we'll deal with this at the end
@@ -566,11 +582,17 @@ function replace($url, $new) {
 function download($dir, $file, $label, $options=array()) {
 	if (is_string($options)) $options = strtoarray($options);
 	
+/*
 	$site = page('site');
 	
 	if (($site != '') && (array_key_exists('use-site', $options) && $options['use-site'])) {
 		$dir = $site.'/'.$dir;
-	}
+	
+	} else $dir = '/var/www/html/sec/'.$site.'/'.$dir;
+*/
+	
+//	$dir = dirname(SITE::file($dir.'/'.$file));
+	
 	$options['mode'] = 'dl';
 	return self::serve($dir, $file, $label, $options);
 }
@@ -588,14 +610,11 @@ function serve($dir, $file, $label, $options=array()) {
 	$defaults = strtoarray('mode:inline | external:false | h: | w: | alt-name:'.$file);
 
 	$options = smart_merge($defaults, $options);
-	
-	$realdir = FILE::dir($dir, false);
-	$realfile = $realdir.'/'.$file;
     
 	$mode = $options['mode'];
 	if ($mode == 'dl') $options['external'] = false;
     
-	if (file_exists($realfile)) {
+	if (file_exists(SITE::file($dir.'/'.$file))) {
 		if ($options['external']) {
 			$options['rel'] = 'external';
 			$options['external'] = false;

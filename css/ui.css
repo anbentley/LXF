@@ -1,0 +1,26 @@
+/* CSS file */
+
+.progress-bg {
+	height: 20px;
+	border: none;
+	background: url(images/progress-bg.png) repeat-x;
+	overflow: hidden;
+	border-left: 1px solid #CCC;
+	border-right: 1px solid #CCC;
+}
+
+.progress {
+	height: 20px;
+	border: none;
+	background: url(images/progress.png) repeat-x;
+}
+
+div.prev_next a img {
+	display: inline;
+	position: relative;
+	top: 2px;
+}
+
+div.prev_next a.selected {
+	color: #779FB5;
+}

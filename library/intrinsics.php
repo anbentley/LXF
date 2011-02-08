@@ -7,6 +7,14 @@
 // A number of functions that should be treated as intrinsic functions in PHP
 
 /**
+ * This function determines if the parameter is an associative array.
+ *
+ * @param	$var	the item to check
+ * @return	a boolean indicating if the item is an associative array.
+ */
+function is_assoc($var) { return (is_array($var) && (count($var)==0 || 0 !== count(array_diff_key($var, array_keys(array_keys($var)))))); }
+
+/**
  * This function removes all buffering except the lowest layer, discarding the contents of all layers.
  * If buffering is off, no action is taken.
  */
@@ -16,12 +24,21 @@ function ob_empty() {
 }
 
 /**
+ * This function removes all buffering flushing the contents of all layers, and then exits.
+ */
+function ob_flush_all() {
+	while (ob_get_level()) ob_end_flush();
+	exit;
+}
+
+/**
  * Display a string with any characters.
  *
  * @param  $string		the string to echo.
  */
-function show($string) {
-	echo htmlspecialchars($string, ENT_COMPAT, 'UTF-8');
+function show($string, $raw=false) {
+	if (!$raw) $string = htmlspecialchars($string, ENT_COMPAT, 'UTF-8');
+	echo $string;
 }
 
 /**
@@ -390,6 +407,7 @@ function arraytostr($array, $options=array()) {
 function as_array($value) {
 	if (is_array($value))  return $value;
 	if (is_string($value)) return strtoarray($value);
+	
 	return array($value);
 }
 
@@ -410,6 +428,22 @@ function array_keys_exist($array, $keys) {
 	}
 	
 	return true;
+}
+
+/**
+ * Walks an array to determine key existence.
+ *
+ * @param	$key	the key to search for
+ * @param	$array	the array to walk
+ * @return	a boolean indicating if the key exists.
+ */
+function array_has_key($key, $array) {
+	if (is_array($array)) {
+		if (array_key_exists($key, $array)) return true;
+		foreach ($array as $value) if (is_array($value) && array_has_key($key, $value)) return true;
+	}
+	
+	return false;
 }
 
 /**
@@ -453,29 +487,59 @@ function array_extract($array, $keys, $default='') {
  * @return	the encoded string.
  */
 function htmlencode($text) {
+	static $zwnj = '&#38;&#122;&#119;&#110;&#106;&#59;';
 	$result = '';
 	if ($text != '') {
 		foreach(str_split($text) as $char) {
 			$result .= "&#".ord($char).";";
 		}
+		$result = str_replace($zwnj, '&zwnj;', $result);
 	}
 	
 	return $result;
 }
 
 /**
- * Embed a block of content inside an HTML comment. 
+ * Embed a block of content inside a hidden span. 
  *
  * @param  $thing	the string to embed.
  * @param  $title	an optional title.
  */
 function comment($thing, $title='') {
-	echo '<!'.'-- ';
-	if ($title != '') echo $title." --\n";
-	print_r($thing);
-	echo ' -->'."\n";
+	echo '<span style="display: none;">'.$title.' &mdash; '.$thing.'</span>';
 }
 
+/**
+ * Converts a string to Title Case, and returns the result.
+ * This function does NOT ensure uppercased words are lowercased to allow for acronyms.
+ *
+ * @param	$title	the string to convert.
+ * @param	$extras	additional words to exclude from capitalization.
+ * @return	the converted string.
+ */
+function strtotitle($title, $extras=array()) { 
+	// An array of words which shouldn't be capitalised if they aren't the first word.
+	$smallwords = array_merge(array( 
+		'a', 'an', 'and', 'at',
+		'but', 'by',
+		'else',
+		'for', 'from',
+		'if', 'in', 'into', 'is',
+		'nor',
+		'of', 'off', 'on', 'or', 'out', 'over',
+		'the', 'then', 'to',
+		'when', 'with' 
+		), $extras);
+	
+	// Split the string into separate words.
+	$words = explode(' ', str_replace('/', ' ~/~ ', $title));
+	
+	// Uppercase the first and all non-small words.
+	foreach ($words as $key => $word) if (($key == 0) || !in_array($word, $smallwords)) $words[$key] = ucwords($word); 
+	
+	return str_replace(' ~/~ ', '/', implode(' ', $words)); 
+}
+	
 /**
  * Makes the current function an alias to the referenced function. 
  *
@@ -484,25 +548,6 @@ function comment($thing, $title='') {
 function alias($original) {
 	$trace = debug_backtrace();
 	return call_user_func_array($original, $trace[1]['args']);
-}
-
-/**
- * Construct a secret code partially based on date.
- *
- * @param	$prefix		an optional prefix to add to the date value for the code construction.
- * @param	$when		an optional date to use instead of time().
- * @param	$max		an optional length limit on the key.
- * @return	the secret code.
- */
-function secretcode($prefix='', $when=null, $max=0) {
-	if ($when == null) $when = time();
-	
-	$key = md5($prefix.date('Y-m-d', $when));
-	
-	// shorten it if necessary
-	if ($max != 0) $key = substr($key, 0, $max);
-	
-	return $key;
 }
 
 /**
@@ -697,35 +742,56 @@ function xml_character_data($parser, $data) {
 } 
 
 function csvtoarray($string) {
-	$lines = explode("\n", $string); // break into lines
-	
+	$string = str_replace(array('\"', '""'), array('\\', '\\'), $string); // escape quotes
+	 
 	$array = array();
-	foreach ($lines as $line) {
-		$items = array();
-		
-		while (strlen($line)) { // more data
-			if (str_begins($line, '"')) { // next item is quoted
-				$start = 1;
-				$end = strpos($line, '"', $start)-1;
-				$nextcomma = strpos($line, ',', $end);
-				if ($nextcomma === false) $nextcomma = strlen($line)+1;
-				
-				
-			} else { // next item isn't quoted
-				$start = 0;
-				$nextcomma = strpos($line, ',', $start);
-				if ($nextcomma === false) $nextcomma = strlen($line)+1;
-				$end = $nextcomma-1;
-			}
-			
-			$items[] = substr($line, $start, $end-$start+1);
-			$line = ltrim(substr($line, $nextcomma+1)); // skip the comma
+	$items = array();
+	while (strlen($string)) { // more data
+		if (strpos($string, '"') === 0) {
+			$start = 1;
+			$end = strpos($string, '"', $start) - 1;
+		} else {
+			$start = 0;
+			$end = 0;
 		}
-		$array[] = $items;
+		$rtn = strpos($string, "\n", $end);
+		if ($rtn === false) $rtn = strlen($string);
+		
+		$comma = strpos($string, ',', $end);
+		if ($comma === false) $comma = strlen($string);
+		
+		$nextdelim = min($rtn, $comma);
+		if ($end == 0) $end = $nextdelim - 1;
+		$items[] = str_replace('\\', '"', substr($string, $start, $end - $start + 1)); // get value and unescape quote
+		
+		if (substr($string, $nextdelim, 1) == "\n") { // we've hit a new line
+			$array[] = $items;
+			$items = array();
+		}
+		$string = ltrim(substr($string, $nextdelim + 1)); // skip the delimiter
 	}
+	if ($items) $array[] = $items;
 	
 	return $array;
 }
+
+function relative($path) {
+	$cwd = explode('/', getcwd());
+	$dir = explode('/', dirname(realpath($path)));
+	
+	do {
+		if ($cwd[0] !== $dir[0]) break;
+		array_shift($cwd);
+		array_shift($dir);
+	} while (!empty($cwd) && !empty($dir));
+	foreach ($cwd as $cd) array_unshift($dir, '..');
+	
+	$newpath = '';
+	foreach ($dir as $d) append($newpath, $d, '/');
+	
+	if ($newpath != '') $newpath .= '/';
+	return $newpath;
+}			
 
 // **************
 // END Intrinsics

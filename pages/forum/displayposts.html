@@ -1,0 +1,546 @@
+<?php
+//style menu
+// get last working
+// add sticky form fields
+// add lock/unlock forum for admins
+// if locked, disable adding and updating - half done
+// add in check for article dependency
+if(isset($_REQUEST["id"])){
+	$topicid=$_REQUEST["id"];
+	$offset=isset($_REQUEST["offset"])?$_REQUEST["offset"]:0;
+	$forum=new FORUM;
+	$forum->getForumFromPost($topicid);
+	$topic=$forum->getPost($topicid);
+	HTML::pageTitle("Forum Topic: ".$topic["title"]);
+	$category=$forum->getCategory($topic["categoryid"]);
+	$url="/?forum/displayposts&id=".$topic["id"];
+// FIX	
+	if ($category["type"]=="article"){
+		$articleid=ARTICLE::getArticleIDfromTopicID($topic["id"]);
+	}
+// **
+	$adminpermissions=array();
+	$adminpermissions[]='web admin';
+	if(!empty($category['modpermissions'])){
+		$adminpermissions[]=$category['modpermissions'];
+	}
+	$isadmin=hasRole($forum->user,$adminpermissions);
+	if(isset($_REQUEST["addpost"])&&($topic["locked"]!=1||$isadmin)){
+		$addpost=$_REQUEST["addpost"];
+		if(!isset($addpost["sticky"])){
+			$addpost["sticky"]=0;
+		}
+		$addpost['content']=strip_tags(stripslashes($addpost['content']),'<a><p><b><i><em><strong><u><strike><img><ul><ol><li><blockquote><hr><embed><object><param>');
+		$addpost['title']=strip_tags(stripslashes($addpost['title']));
+		$addpost['categoryid']=$category['id'];
+		$addpost['topicid']=$topic['id'];
+		$postid=$forum->addPost($addpost);
+		if(isset($_FILES['postfiles'])){
+			$postfiles=$_FILES['postfiles'];
+			$addpostfiles=$_REQUEST['addpostfiles'];
+			for($x=0;$x<count($postfiles["name"]);$x++){
+				unset($data);
+				$data["file"]=trim(basename($postfiles["name"][$x]));
+				if(!empty($data["file"])){
+					$data["label"]=$addpostfiles["label"][$x];
+					$data["description"]=$addpostfiles["description"][$x];
+					$data["postid"]=$postid;
+					$data["tmp_name"]=$postfiles['tmp_name'][$x];
+					$forum->addPostFile($data);
+				}
+			}
+		}		
+		$last=$postid;
+	} elseif (isset($_REQUEST["updatepost"])){
+		$updatepost=$_REQUEST["updatepost"];
+		$post=$forum->getPost($updatepost["id"]);
+		if(($post['createdby']==$forum->userid&&$topic["locked"]!=1)||$isadmin){
+			if(!isset($updatepost["sticky"])){
+				$updatepost["sticky"]=0;
+			}
+			$updatepost['content']=strip_tags(stripslashes($updatepost['content']),'<a><p><b><i><em><strong><u><strike><img><ul><ol><li><blockquote><hr><embed><object><param>');
+			$updatepost['title']=strip_tags(stripslashes($updatepost['title']));
+			if(isset($updatepost["deletefiles"])){
+				foreach($updatepost["deletefiles"] as $fileid){
+					$forum->deletePostFile($fileid);
+				}
+				unset($updatepost["deletefiles"]);
+			}
+			if(isset($updatepost["updatepostfiles"])){
+				foreach($updatepost["updatepostfiles"] as $updatepostfile){
+					$forum->updatePostFile($updatepostfile);
+				}
+				unset($updatepost["updatepostfiles"]);
+			}
+			if(isset($_FILES['postfiles'])){
+				$postfiles=$_FILES['postfiles'];
+				$addpostfiles=$_REQUEST['addpostfiles'];
+				for($x=0;$x<count($postfiles["name"]);$x++){
+					unset($data);
+					$data["file"]=trim(basename($postfiles["name"][$x]));
+					if(!empty($data["file"])){
+						$data["label"]=$addpostfiles["label"][$x];
+						$data["description"]=$addpostfiles["description"][$x];
+						$data["postid"]=$updatepost["id"];
+						$data["tmp_name"]=$postfiles['tmp_name'][$x];
+						$forum->addPostFile($data);
+					}
+				}
+			}		
+			$forum->updatePost($updatepost);
+		}
+		$last=$updatepost["id"];
+	} elseif (isset($_REQUEST["delete"])){
+		$postid=$_REQUEST["delete"];
+		$post=$forum->getPost($postid);
+		if($isadmin||$post['createdby']==$forum->userid){
+			$forum->deletePost($postid);
+		}
+	}
+	$posts=$forum->listPosts($topic['id']);
+	$numPerPage=30;
+	echo '
+		<div class="forumbreadcrumb">
+			<a href="/?forum/display&id='.$forum->forum["id"].'">'.$forum->forum["title"].'</a>&nbsp;&gt;&nbsp; 
+			<a href="/?forum/displaytopics&id='.$category['id'].'">'.$category['title'].'</a>&nbsp;&gt;&nbsp;
+			<a href="/?forum/displayposts&id='.$topic["id"].'">'.$topic['title'].'</a>
+		</div>
+		<table cellpadding="0" cellspacing="0" border="0" class="forumtable">
+			<tr>
+				<td class="forumheading" valign="bottom">'.$category['title'].'</td>
+			</tr>
+			<tr>
+				<td class="forumsubheading" valign="bottom">'.$topic["title"].'</td>
+			</tr>			
+			<tr>
+				<td>
+	';
+	FORUM::navigationBar($url,count($posts),$numPerPage,$offset);
+	echo '
+				</td>
+			</tr>
+		</table>
+	';
+	if($offset==0){
+		if ($category["type"]=="article"){
+			$articleid=ARTICLE::getArticleIDfromTopicID($topic["id"]);
+			$article=new ARTICLE($articleid);
+			$_page["subtitle"]="Comments for: ".$article->record['title'];
+			$topic['title']=$article->record['title'];
+			//UI::portletStart("articletopic", $article->record['title'].$article->authorNameLinks());
+			if(!empty($article->record['image'])){
+				echo '
+				<img src="/?image&section=articles&name=' . $article->record['image'] . '&maxwidth=250&maxheight=350" class="articleimage"/>
+				';
+			}
+			echo '
+				' . ((!empty($article->record["articlefile"]))?"<a href='/?view&section=articles&name=".$article->record["articlefile"]."'/>Article File</a>":$article->record["article"]) . '
+			';
+			if(@$_REQUEST['reply']!=$topic['id']){
+				echo '
+				<div class="postbuttons">
+					<div class="postbuttonsleft"></div>
+					<div><a href="'.$url.'&reply='.$topic['id'].'#reply'.$topic['id'].'">Reply</a></div>
+					<div class="postbuttonsright"></div>
+				</div>
+				';
+			}
+			//UI::portletEnd();
+		} else {
+			$user=AUTH::getUserfromID($topic['createdby']);
+			$user=$user[0];
+			$username=$user["first_name"] . " " . $user["last_name"];
+			$topicfiles=$forum->getPostFiles($topic["id"]);
+			echo '
+			<table cellpadding="0" cellspacing="0" border="0" class="forumtable">
+				<tr>
+					<td><img src="images/spacer.gif" id="forumuserprofilecolumn" height="1"/></td>
+					<td><img src="images/spacer.gif" id="forumpostcolumn" height="1"/></td>
+				</tr>
+				<tr class="forumtopicrow">
+					<td class="forumtopicprofile" align="center" rowspan="3">
+						<a href="/?people/bio&who=' . $user["email"] . '"><img src="/files/'.$topic['createdby'].'/'.$topic['createdby'].'.jpg" height="75" width="75" alt="" class="forumprofileimage"/></a>
+						<span class="profilelink"><a href="/?people/bio&who=' . $user["email"] . '" class="profilelink">'.$username.'</a></span>
+						<span class="postdate">'.date("F d, Y H:i",(strtotime($topic['date']))).'</span>
+					</td>
+					<td class="forumposttitle forumposttitletopic">'.$topic['title'].'</td>
+				</tr>
+			';
+			if(($isadmin||$post['createdby']==$forum->userid)&&@$_REQUEST['edit']==$topicid){
+				echo '
+				<tr class="forumtopicrow" style="min-height:100px;height:100px;">
+					<td>
+					<form action="'.$url.'" method="post" enctype="multipart/form-data"/>
+						<input type="hidden" name="updatepost[id]" value="'.$topic['id'].'"/>
+						<div class="ui_formdiv">
+							<label>Subject</label>
+							<input type="text" name="updatepost[title]" size="100" value="'.$topic['title'].'"/>
+						</div>
+						<div class="clear"></div>
+						<label>Content</label>
+				';
+				$oFCKeditor=new FCKeditor('updatepost[content]');
+				$oFCKeditor->ToolbarSet='KnowvitForum';
+				$oFCKeditor->Value=$topic['content'];
+				$oFCKeditor->Create();
+				echo '
+						<div class="clear"></div>
+				';	
+				for($x=0;$x<count($topicfiles);$x++){
+					if(!empty($topicfiles[$x])){
+						echo '
+						<div id="updatepostfile'.$x.'">
+							<div class="ui_formdiv">
+								<input type="hidden" name="updatepost[id][]" value="'.$topicfiles[$x]["id"].'"/>
+								<label>File Label</label>
+								<input type="text" size="80" name="updatepost[label][]" value="'.$topicfiles[$x]["label"].'"/>
+							</div>
+							<div class="ui_formdiv">
+								<input type="button" class="deletefile" value="Delete" rel="'.$x.':'.$topicfiles[$x].'" />
+							</div>
+							<div class="clear"></div>
+							<div class="ui_formdiv">
+								<label>File Description</label>
+								<textarea name="updatepost[description][]" value="'.$topicfiles[$x]["description"].'"></textarea>
+							</div>
+							<div class="clear"></div>
+						</div>
+						';
+					}
+				}
+				echo '
+						<div class="filefield">
+							<div class="ui_formdiv">
+								<label>Attach a file</label>
+								<input type="file" name="postfiles[]" />
+							</div>
+							<div class="ui_formdiv">
+								<label>File Label</label>
+								<input type="text" name="addpostfiles[label][]" size="60" value=""/>
+							</div>
+							<div class="clear"></div>
+							<div class="ui_formdiv">
+								<label>File Description</label>
+								<textarea name="addpostfiles[description][]" value=""></textarea>
+							</div>
+							<div class="clear"></div>
+						</div>
+					</td>
+				</tr>
+				<tr class="forumtopicrow">
+					<td class="forumpostbuttons" align="right">
+						<div class="ui_formdiv">
+							<input type="submit" value="Update Topic"/>
+						</div>
+						<div class="clear"></div>
+					</form>
+					</td>
+				</tr>
+				';
+			} else {
+				echo '
+				<tr class="forumtopicrow" style="min-height:100px;height:100px;">
+					<td class="forumpostcontent" valign="top">'. $topic['content'];
+				if(!empty($topicfiles)){
+					echo '
+					<div class="forumattachedfiles">
+						<label>Attached Files</label>
+						<ul>
+					';
+					for($x=0;$x<count($topicfiles);$x++){
+						$filelabel=!empty($topicfilelabels[$x])?$topicfilelabels[$x]:$topicfiles[$x];
+						if(!empty($topicfiles[$x])){
+							echo '
+							<li><a href="/?view&name=file/'.$topicfiles[$x].'">'.IMG::ext($topicfiles[$x]).$filelabel.'</a></li>
+							';
+						}
+					}
+					echo '
+						</ul>
+					</div>
+					';
+				}
+				echo '
+					</td>
+				</tr>
+				<tr class="forumtopicrow">
+					<td class="forumpostbuttons" align="right">
+				';
+				if(@$_REQUEST['reply']!=$topic['id']){
+					if($isadmin){
+						echo '
+						<span><a href="'.$url.'&edit='.$topic['id'].'">Edit</a></span>
+						<span><a rel="'.$url.'&delete='.$topic['id'].'" class="deletepost">Delete</a></span>
+						';
+					} elseif($topic['createdby']==$forum->userid&&(strtotime($topic['date'])+1800)>time()){
+						echo '
+						<span><a href="'.$url.'&edit='.$topic['id'].'">Edit</a></div>
+						<span><a rel="'.$url.'&delete='.$topic['id'].'" class="deletepost">Delete</a></span>
+						';
+					}					
+					echo '
+						<span><a href="'.$url.'&reply='.$topic['id'].'#reply'.$topic['id'].'">Reply</a></span>
+					';
+				}
+			}
+			echo '
+					</td>
+				</tr>
+			</table>
+			';
+		}
+	}
+	if(!empty($posts)){
+		$temparray=array();
+		for($x=($numPerPage*$offset);$x<(($numPerPage*$offset)+$numPerPage)&&$x<count($posts);$x++){
+			$depth=$posts[$x]["depth"];
+			if($x==$numPerPage*$offset){
+				for($y=$depth;$y>=0;$y--){
+					$temparray[$y."key"]=1;
+				}
+			}
+			unset($temparray[($depth+1)."key"]);
+			$post=$posts[$x];
+			$user=AUTH::getUserfromID($post['createdby']);
+			$user=$user[0];
+			$username=$user["first_name"] . " " . $user["last_name"];
+			$postfiles=$forum->getPostFiles($post["id"]);
+			echo '
+			<a name="post'.$post['id'].'"></a>
+			<table cellpadding="0" cellspacing="0" border="0" class="forumtable">
+				<tr>
+					<td rowspan="4"><img src="images/spacer.gif" style="width:'.($depth*10).'px;" height="1"/></td>
+					<td><img src="images/spacer.gif" id="forumuserprofilecolumn" height="1"/></td>
+					<td><img src="images/spacer.gif" style="width:'.(720-($depth*10)).'px;" height="1"/></td>
+				</tr>				
+				<tr class="forumtopicrow">
+					<td class="forumtopicprofile" align="center" rowspan="3">
+						<a href="/?people/bio&who=' . $user["email"] . '"><img src="/files/'.$post['createdby'].'/'.$post['createdby'].'.jpg" height="75" width="75" alt="" class="forumprofileimage"/></a>
+						<span class="profilelink"><a href="/?people/bio&who=' . $user["email"] . '" class="profilelink">'.$username.'</a></span>
+						<span class="postdate">'.date("F d, Y H:i",(strtotime($post['date']))).'</span>
+					</td>
+					<td class="forumposttitle forumposttitletopic">'.$topic['title'].'</td>
+				</tr>				
+			';
+			if(($post['createdby']==$forum->userid||$isadmin)&&@$_REQUEST['edit']==$post['id']){
+				echo '
+				<tr class="forumtopicrow" style="min-height:100px;height:100px;">
+					<td class="posteditform">
+						<form action="'.$url.'" method="post" enctype="multipart/form-data"/>
+						<input type="hidden" name="offset" value="'.$offset.'"/>
+						<input type="hidden" name="updatepost[id]" value="'.$post['id'].'"/>
+						<div class="ui_formdiv">
+							<label>Subject</label>
+							<input type="text" name="updatepost[title]" size="100" value="'.$post['title'].'"/>
+						</div>
+						<div class="clear"></div>
+						<label>Content</label>
+				';
+				$oFCKeditor=new FCKeditor('updatepost[content]');
+				$oFCKeditor->ToolbarSet='KnowvitForum';
+				$oFCKeditor->Value=$post['content'];
+				$oFCKeditor->Create();
+				for($y=0;$y<count($postfiles);$y++){
+					if(!empty($postfiles[$y])){
+						echo '
+							<div id="updatepostfile'.$y.'">
+								<div class="ui_formdiv">
+									<input type="hidden" name="updatepost[id][]" value="'.$postfiles[$y]["id"].'"/>
+									<label>File Label</label>
+									<input type="text" size="80" name="updatepost[label][]" value="'.$postfiles[$y]["label"].'"/>
+								</div>
+								<div class="ui_formdiv">
+									<input type="button" class="deletefile" value="Delete" rel="'.$y.':'.$postfiles[$y].'" />
+								</div>
+								<div class="clear"></div>
+								<div class="ui_formdiv">
+									<label>File Description</label>
+									<textarea name="updatepost[description][]" value="'.$postfiles[$y]["description"].'"></textarea>
+								</div>
+								<div class="clear"></div>
+							</div>						
+						';
+					}
+				}				
+				echo '
+						<div class="filefield">
+							<div class="ui_formdiv">
+								<label>Attach a file</label>
+								<input type="file" name="updatepostfiles[]" />
+							</div>
+							<div class="ui_formdiv">
+								<label>Name</label>
+								<input type="text" name="updatepost[filelabels][]" size="60" value=""/>
+							</div>
+							<div class="clear"></div>
+						</div>				
+						<div class="clear"></div>				
+						<input type="submit" value="Update Post"/>
+						</form>
+					</td>
+				</tr>
+				';
+			} else {
+				echo '
+				<tr class="forumtopicrow" style="min-height:100px;height:100px;">
+					<td class="forumpostcontent" valign="top">
+					'.$post['content'].'
+				';
+				for($y=0;$y<count($postfiles);$y++){
+					$filelabel=!empty($postfilelabels[$y])?$postfilelabels[$y]:$postfiles[$y];
+					if($y==0){
+						echo '
+						<div class="forumattachedfiles">
+						<label>Attached Files</label>
+							<ul>
+						';
+					}					
+					if(!empty($postfiles[$y])){
+						echo '
+						<li><a href="/?view&name=file/'.$postfiles[$y].'">'.IMG::ext($postfiles[$y]).$filelabel.'</a></li>
+						';
+					}
+					if($y==(count($postfiles)-1)){
+						echo '
+							</ul>
+						</div>
+						';
+					}					
+				}				
+				echo '					
+					</td>
+				</tr>
+				<tr class="forumtopicrow">
+					<td class="forumpostbuttons" align="right">
+				';
+				if(@$_REQUEST['reply']!=$post['id']){
+					if($isadmin){
+						echo '
+						<span><a href="'.$url.'&edit='.$post['id'].'">Edit</a></span>
+						<span><a rel="'.$url.'&delete='.$post['id'].'" class="deletepost">Delete</a></span>
+						';
+					} elseif($post['createdby']==$forum->userid&&(strtotime($post['date'])+1800)>time()){
+						echo '
+						<span><a href="'.$url.'&edit='.$post['id'].'">Edit</a></span>
+						<span><a rel="'.$url.'&delete='.$post['id'].'" class="deletepost">Delete</a></span>
+						';
+					}					
+					echo '
+						<span><a href="'.$url.'&reply='.$post['id'].'#reply'.$post['id'].'">Reply</a></span>
+					';
+				}
+			}
+			echo '
+					</td>
+				</tr>
+			</table>
+			';
+			if(@$_REQUEST['reply']==$post['id']){
+				//UI::portletStart("","","postreply");
+				echo '
+				<div class="postreplyform">
+					<a name="reply'.$post['id'].'"></a>
+					<form action="'.$url.'" method="post" enctype="multipart/form-data"/>
+						<input type="hidden" name="offset" value="'.$offset.'"/>
+						<input type="hidden" name="addpost[parentid]" value="'.$post["id"].'"/>
+						<label>Subject</label>
+						<input type="text" name="addpost[title]" size="100" value="Re:'.$post['title'].'"/>
+						<label>Content</label>
+				';
+				$oFCKeditor=new FCKeditor('addpost[content]');
+				$oFCKeditor->ToolbarSet='KnowvitForum';
+				$oFCKeditor->Value="";
+				$oFCKeditor->Create() ;
+				echo '
+						<div class="filefield">
+							<div class="ui_formdiv">
+								<label>Attach a file</label>
+								<input type="file" name="addpostfiles[]" />
+							</div>
+							<div class="ui_formdiv">
+								<label>Name</label>
+								<input type="text" name="addpost[filelabels][]" size="60" value=""/>
+							</div>
+							<div class="clear"></div>
+						</div>					
+						<div class="ui_formdiv">
+							<label>Topic pertains to the following subjects:</label>
+				';
+				if(!PERMISSION::hasPermission($adminpermissions)){
+					foreach($topicselected as $item){
+						echo '
+							<input type="hidden" name="topictags[]" value="'.$item.'"/>
+						';
+					}
+				}
+				//UI::CBList("","","topictags",$topictags,$topicselected,((PERMISSION::hasPermission($adminpermissions))?NULL:$topicselected));
+				echo '
+						</div>
+						<div class="ui_formdiv">
+							<label>Topic pertains to the following regions:</label>
+				';
+				//UI::CBList("","regiontags","topictags",$regiontags,$topicselected,((PERMISSION::hasPermission($adminpermissions))?NULL:$topicselected));
+				echo '
+						</div>
+						<div class="clear"></div>				
+						<label>Post Anonymously?</label>
+						<input type="checkbox" name="addpost[anonymous]" value="1"/>
+						<div class="clear"></div>
+						<input type="submit" value="Add Reply"/>
+					</form>
+				</div>
+				';	
+				//UI::portletEnd();
+			}
+			for($y=0;$y<$depth;$y++){
+				echo '
+					</div>
+					<div class="clear"></div>
+				';
+			}
+			$temparray[$depth."key"]=1;
+		}		
+	}
+	FORUM::navigationBar($url,count($posts),$numPerPage,$offset);
+	if(@$_REQUEST['reply']==$topic['id']){
+		//UI::portletStart("","","postreply");
+		echo '
+		<div class="postreplyform">
+			<a name="reply'.$topic['id'].'"></a>
+			<form action="'.$url.'" method="post" enctype="multipart/form-data"/>
+				<input type="hidden" name="offset" value="'.$offset.'"/>
+				<input type="hidden" name="addpost[parentid]" value="'.$topic['id'].'"/>
+				<label>Subject</label>
+				<input type="text" name="addpost[title]" size="100" value="Re:'.$topic['title'].'"/>
+				<label>Content</label>
+		';
+		$oFCKeditor=new FCKeditor('addpost[content]');
+		$oFCKeditor->ToolbarSet='KnowvitForum';
+		$oFCKeditor->Value="";
+		$oFCKeditor->Create() ;
+		echo '
+				<div class="filefield">
+					<div class="ui_formdiv">
+						<label>Attach a file</label>
+						<input type="file" name="addpostfiles[]" />
+					</div>
+					<div class="ui_formdiv">
+						<label>Name</label>
+						<input type="text" name="addpost[filelabels][]" size="60" value=""/>
+					</div>
+					<div class="clear"></div>
+				</div>
+				<div class="clear"></div>
+				<input type="submit" value="Add Reply"/>
+			</form>
+		</div>
+		';	
+	
+	}
+	echo '		
+	</div>	
+	';
+} else {
+	header("Location: /?forum/display");
+}
+?>	

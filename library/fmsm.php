@@ -124,23 +124,24 @@ function permissionMatrix($user, $details) {
 	if ($matrix == null) {
 		$matrix = array();
 		foreach (get('fm-directories') as $entry => $entrydetails) {
-			$matrix[self::translatePattern($entry)] = $entrydetails;
+			$matrix[self::translatePattern(get('site-directory').$entry)] = $entrydetails;
 		}
 	}
-
-	$dir = array_extract($details, array('dir'), '');
+	
+	$dir = SITE::file(array_extract($details, array('dir'), ''));	
 	$permits = array();
+	
 	// find the appropriate entry to apply to this element
 	foreach ($matrix as $entry => $permissions) {		
-		if (preg_match($entry, $dir)) {
+		if ($rslt = preg_match($entry, $dir)) {
 			$permits = $permissions;
 			break;
 		}
 	}
-
+	
 	foreach ($permits as $role => $permissions) {
 		foreach ($permissions as $permission) {
-			if (hasPermission($user, $permission) || hasDescription($user, $permission) || hasEntry($user, $permission, 'Masters Cohort') || ($permission == '*')) {
+			if (($permission == '*') || hasRole($user, $permission) || hasEntry($user, $permission, 'Masters Cohort')) {
 				$actions = smart_merge($deny, $roles[$role]); // merge with denied values to insure all settings are passed
 				return $actions;
 			} 

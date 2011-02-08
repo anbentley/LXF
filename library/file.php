@@ -57,7 +57,7 @@ function getlist($dir, $details=array()) {
 		'include-directory' => false,
 	);
 		
-	$details = smart_merge($defaults, $details);
+	$details = smart_merge($defaults, strtoarray($details));
 	if (!is_array($details['file-ext'])) $details['file-ext'] = array($details['file-ext']);
 	
 	$skip = array('.', '..', '_notes', '.DS_Store');
@@ -132,7 +132,7 @@ function getlist($dir, $details=array()) {
 			}
 		}
 	}
-
+	
 	return $flist;
 }
 
@@ -163,9 +163,7 @@ function find ($file, $dirs) {
  * @return	the extension of the filename if any.
  */
 function ext($value) {
-	if (0 == ($dot = strrpos($value, '.'))) return '';
-	
-	return strtolower(substr($value, $dot+1));
+	return pathinfo($value, PATHINFO_EXTENSION);
 }
 
 /**
@@ -175,11 +173,7 @@ function ext($value) {
  * @return	the filename without the extension.
  */
 function name($value) {
-	$value = self::filename($value); // remove the path if there is one
-	
-	if (0 != ($dot = strrpos($value, '.'))) $value = substr($value, 0, $dot);
-	
-	return $value;
+	return pathinfo($value, PATHINFO_FILENAME);
 }
 
 /**
@@ -189,10 +183,7 @@ function name($value) {
  * @return	the path without the filename.
  */
 function path($value) {
-	$slash = strrpos($value, '/');
-	if ($slash !== false) $value = substr($value, 0, $slash);
-	
-	return $value;
+	return dirname($value);
 }
 
 /**
@@ -202,10 +193,7 @@ function path($value) {
  * @return	the name without the path.
  */
 function filename($value) {
-	$slash = strrpos($value, '/');
-	if ($slash !== false) $value = substr($value, $slash+1);
-	
-	return $value;
+	return basename($value);
 }
 
 /**
@@ -472,13 +460,12 @@ function resolveDir($dir) {
 }
 
 function safeToServe($filename) {
-    $pi = pathinfo($filename);
-
-    $badDirs = array('./', 'conf/', 'courses/', 'css/', 'includes/', 'jsincludes/', 'pages/', 'parts/');
-    foreach ($badDirs as $bd) if (str_contains($pi['dirname'], $bd)) return false;
-    
-    $badExts = array('css', 'exe', 'js', 'php');
-    if (in_array($pi['extension'], $badExts)) return false;
+    $ext = pathinfo($filename, PATHINFO_EXTENSION);
+    $badExts = array('css', 'exe', 'js', 'php', 'html');
+    if (in_array($ext, $badExts)) return false;
+	
+	$dir = dirname($filename);
+	if (str_contains($filename, array('configuration', 'css', 'pages', 'parts', 'library', 'javascript'))) return false;
     
     return true;
 }
@@ -492,33 +479,26 @@ function safeToServe($filename) {
  * @param	$altf		an alternate file name to use on download.
  */
 function serve($drm, $f, $mode='inline', $altf='') {
-	$rdrm = FILE::dir($drm, false);
+    if ($drm) $f = $drm.'/'.$f;
+	$filename = SITE::file($f);
 	
-	if ($rdrm != '') {
-		$filename = $rdrm.'/'.$f;
-	} else {
-		$filename = $f;
-	}
-    
-    if (($rdrm == $drm) && !self::safeToServe($filename)) $filename = get('no-resource', 'resources/noresource.txt');
-    
-	$temp = explode('/', $f);
-	$f = array_pop($temp);
-	
-	// look for added parameters
-    if ($f != '') $amp = strpos('&', $f);
-	if ($amp > 0) $f = substr($f, 0, $amp - 1);
-			
 	if (file_exists($filename)) { // we have a valid source file
-		if (($mode == 'dl') || in_array(FILE::ext($filename), get('force-download'))) $mode = 'attachment';
+		$checkDownload = get('check-download', array('FILE', 'safeToServe'));
+		if (!call_user_func($checkDownload, $filename)) LINK::redirect('nofile');
+
+		if (str_begins($mode, 'dl') || in_array(FILE::ext($filename), get('force-download'))) $mode = 'attachment';
 
 		if ($altf == '') $altf = $f; // use the original name if the alternate is empty
+		$altf = basename($altf);
 		
 		// firefox bug doesn't allow spaces
 		if (str_contains($_SERVER['HTTP_USER_AGENT'], 'Firefox')) $altf = str_replace(' ', '_', $altf);
 		
+		// Chrome bug requires it to be a download
+		if (str_contains($_SERVER['HTTP_USER_AGENT'], ' Chrome/')) $mode = 'attachment';
+		
 		// get mimetype and cleanup
-		$mime = FILE::mimetype($filename);
+		$mime = self::mimetype($filename);
 		
 		if ($mime == 'text/html') $mime .='; charset=UTF-8';
 		
@@ -536,17 +516,22 @@ function serve($drm, $f, $mode='inline', $altf='') {
 			"Content-Transfer-Encoding: Binary",
 			"Accept-Ranges: bytes",
 			"Content-length: $length",
+			"Content-disposition: $mode; filename=".$altf,
 		);
-		if (str_contains($_SERVER['HTTP_USER_AGENT'], ' Chrome/')) $mode = 'attachment';
-		$header[] = "Content-disposition: $mode; filename=".$altf;
 
-		while(@ob_end_clean());	// remove any prior buffers
+		ob_empty();	// remove any prior buffers
 
-		ob_start();
 		foreach ($header as $entry) header($entry);
-		readfile($filename);
-		ob_end_flush();
+		if (($checkpolicy = get('encryption-policy')) && @call_user_func($checkpolicy, $filename)) {
+			$temp = tempnam(sys_get_temp_dir(), 'de');
+			self::crypt('de', $filename, $temp, null, false);
+			$filename = $temp;
+		}
+		
+		$size = readfile($filename);
 		exit();
+	} else {
+		echo p('', 'file not found.');
 	}
 }
 
@@ -868,6 +853,163 @@ function unZip ($zipfile, $toDir) {
 	return $result;
 }
 
+/**
+ * Encrypts a file to a new file after processing.
+ *
+ * @param	$from	file to process.
+ * @param	$to		the name the file is supposed to take after it's been processed.
+ * @param	$key	the key used for processing.
+ * @return	a boolean indicating the success of the operation.
+ */
+function encrypt($from, $to='', $key=null, $block=false) {
+	return self::crypt('en', $from, $to, $key, $block);
+}
+	
+/**
+ * Decrypts a file to a new file after processing.
+ *
+ * @param	$from	file to process.
+ * @param	$to		the name the file is supposed to take after it's been processed.
+ * @param	$key	the key used for processing.
+ * @return	a boolean indicating the success of the operation.
+ */
+function decrypt($from, $to='', $key=null, $block=false) {
+	return self::crypt('de', $from, $to, $key, $block);
+}
+
+/**
+ * Encrypts/Decrypts a file to a new file after processing.
+ *
+ * @param	$mode	{ en | de }
+ * @param	$from	file to process.
+ * @param	$to		the name the file is supposed to take after it's been processed.
+ * @param	$key	the key used for processing.
+ 8 @param	$block	encrypt the data in blocks. (default is false)
+ * @return	a boolean indicating the success of the operation.
+ */
+function crypt($mode, $from, $to='', $key=null, $block=false) {
+	if (!file_exists($from) || !is_file($from)) return false;
+	
+	if ($key == null) {
+		$seed = get('random-seed');
+		$key = CRYPT::keygen(substr($seed, 32, 32), substr($seed, 0, 16), 1000, 32);
+	}
+	
+	$temp = tempnam(sys_get_temp_dir(), $mode);
+	
+	if ($to == '') $to = $from;
+	
+	if (!$block) {
+		$result = encrypt_file_contents($from, $key, $mode);
+		
+		if (!self::write($temp, $result)) return false;
+		
+	} else {
+		$ffile = fopen($from, 'r');
+		$tfile = fopen($temp, 'w');
+		
+		$length = 3200000;
+		if ($mode == 'en') $length -= 32; // allow for iv
+		
+		while ($data = self::fread($ffile, $length)) {			
+			set_time_limit(300);
+			if ($mode == 'en') {
+				$result = CRYPT::encrypt($data, $key);
+			} else {
+				$result = CRYPT::decrypt($data, $key);
+			}
+			if (!fwrite($tfile, $result)) return false;
+		}
+		fclose($tfile);
+	}
+	
+	if (!rename($from, $from.'.old') || (file_exists($to) && !unlink($to)) || !rename($temp, $to) || !unlink($from.'.old')) return false;
+	
+	return true;
+}
+
+/**
+ * Extends the defaul fread limit to an arbitrary amount of data.
+ */
+function fread($handle, $length) {
+	$data = '';
+	$left = $length;
+	echo $length;
+	while ($left && $read = fread($handle, min(8000, $left))) {
+		$data .= $read;
+		$left -= strlen($read);
+	}
+	
+	if ($data == '') return false;
+	echo ' read', br();
+	return $data;
+}
+		
+	
 } // end class FILE
 
+/**
+ * Encrypts a file's contents.
+ *
+ * @param	$file			file to process.
+ * @param	$key			the key used for processing.
+ * @return					the processed content or false.
+ */
+function encrypt_file_contents($file, $key=null, $mode='en') {
+	if (!file_exists($file) || !is_file($file)) return false;
+	
+	if ($key == null) {
+		$seed = get('random-seed');
+		$key = CRYPT::keygen(substr($seed, 32, 32), substr($seed, 0, 16), 1000, 32);
+	}
+	
+	$data = file_get_contents($file);
+	
+	if ($mode == 'en') {
+		$result = CRYPT::encrypt($data, $key);
+	} else {
+		$result = CRYPT::decrypt($data, $key);
+	}
+
+	return $result;
+}
+	
+	
+/**
+ * Decrypts a file's contents.
+ *
+ * @param	$file			file to process.
+ * @param	$key			the key used for processing.
+ * @return					the processed content or false.
+ */
+function get_encrypted_file_contents ($file, $key=null) {
+	return encrypt_file_contents($file, $key, $mode='de');
+}
+
+/**
+ * Encrypts/Decrypts a file to a new file after processing.
+ *
+ * @param	$mode	{ e | d }
+ * @param	$from	file to process.
+ * @param	$to		the name the file is supposed to take after it's been processed.
+ * @param	$key	the key used for processing.
+ * @return	a boolean indicating the success of the operation.
+ */
+function ncrypt($mode, $from, $to='', $key=null) {
+	if (!file_exists($from) || !is_file($from)) return false;
+	
+	if ($key == null) $key = substr(get('random-seed'), 32, 32);
+	
+	$temp = tempnam(sys_get_temp_dir(), $mode);
+	
+	if ($to == '') $to = $from;
+	
+	$result = CRYPT::ncrypt($from, $temp, $key, $mode);
+	
+	if (!$result || !rename($from, $from.'.old') || (file_exists($to) && !unlink($to)) || !rename($temp, $to) || !unlink($from.'.old')) return false;
+	
+	return true;
+}
+	
+	
 ?>

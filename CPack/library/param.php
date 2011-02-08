@@ -67,6 +67,10 @@ function exists($var) {
 
 }
 
+function hostpage() {
+	return page('hostpage');
+}
+
 /**
  * Return value of page parameter (first parameter in the query string).
  *
@@ -91,7 +95,7 @@ function value ($var, $def='') {
 }
 
 function full() {
-	return page('full');
+	return page('url');
 }
 
 function fullURI() {

@@ -1,0 +1,21 @@
+<?php
+
+$site = PARAM::value('s');
+$file = PARAM::value('f');
+
+HTML::title('Comparing: '.basename($file).' on '.$site);
+
+membersOnly('Web Admin');
+
+$site = PARAM::value('s');
+$devSite    = 'https://dev.chds.us/';
+$liveSite   = 'https://www.chds.us/';
+
+$url = '?core/fgc';
+append($url, 'u='.urlencode(get_auth_info('CHDS_login')), '&amp;');
+append($url, 'p='.urlencode(get_auth_info('md5mpd')), '&amp;');
+append($url, 'f='.urlencode($file), '&amp;');
+
+echo COMPARE::text(file_get_contents($devSite.$url), file_get_contents($liveSite.$url), 'Dev '.$site, 'Live '.$site);
+
+?>

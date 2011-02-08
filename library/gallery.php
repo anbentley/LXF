@@ -117,6 +117,7 @@ function cleanPath($path) {
 function display($details) { 
 	if (is_string($details)) $details = strtoarray($details);
 	$details = smart_merge(self::defaults(), $details);
+	$details['base'] = SITE::file($details['base']);
 	
 	// see if there is an internal functional request here... 
 	if (page('value') != '') { // there was a gallery function
@@ -142,6 +143,7 @@ function display($details) {
 	$d = FILE::dir($d, false); // map from logical to physical
 		
 	$dir = $details['base'];
+
 	if ($d != '') {
 		if (!str_begins($d, $dir)) {
 			$dir .= '/'.$d;
@@ -150,7 +152,7 @@ function display($details) {
 		}
 	}
 	
-	$dir = self::cleanPath($dir);
+	$dir = SITE::file($dir);
 	
 	if (!file_exists($dir)) return;
 	
@@ -159,7 +161,7 @@ function display($details) {
 		
 	} else { // this is a directory
 		$files = FILE::getlist($dir, array('file-ext' => '*', 'order-by' => $details['order-by'], 'recursive' => $details['recursive'], 'ignore' => array(get('meta-file'))));
-		
+	
 		if (in_array($details['format'], array('block', 'across', 'left', 'right', 'flow', 'autoflow'))) { // don't use these formats if subdirectories exist
 			if (is_array($files)) {
 				foreach($files as $file) {
@@ -171,7 +173,7 @@ function display($details) {
 			}
 		}
 		
-		$meta = META::getFileMetadata($dir);
+		$meta = META::get($dir);
 		if (array_key_exists('format', $meta)) {
 			$details['format'] = $meta['format']['value'];
 		}
@@ -292,14 +294,14 @@ function arrayToDisplay($dir, $files, $details) {
 	$result = ''; // initialize result
 	
 	if (($dir != $details['base']) && !$details['recursive']) {
-		$back = substr($dir, 0, strrpos($dir, '/'));
+		$back = dirname($dir);
 		$result .= div('class:file-nav', self::link($back, $details['back-link'], '', $details));
 	}
 	
 	$directory = substr($dir, strlen($details['base'])+1);
 
 	if (($dir == $details['base']) || (($dir != $details['base']) && !$details['recursive'])) {
-		$meta = META::getFileMetadata($dir);
+		$meta = META::get($dir);
 		$short = $meta['short'];
 		$long = $meta['long'];
 		$short = str_replace(array('{', '}', '&'), array("<", ">", '&amp;'), $short);
@@ -326,7 +328,7 @@ function arrayToDisplay($dir, $files, $details) {
 		}
 		
 		if (is_numeric($key)) { // this is a leaf node (file)
-			$meta = META::getFileMetadata($dir.'/'.$value);
+			$meta = META::get($dir.'/'.$value);
 			$short = $meta['short'];
 			$long = $meta['long'];
 			$short = str_replace('&', '&amp;', $short);
@@ -355,7 +357,7 @@ function arrayToDisplay($dir, $files, $details) {
 			}
 		
 		} else { // this is a directory: $key is name, $value is new content
-			$meta = META::getFileMetadata($key);				
+			$meta = META::get($key);				
 			$metaitems = array('short', 'long', 'icon');
 			foreach ($metaitems as $mi) {
 				$$mi = $meta[$mi];
@@ -394,7 +396,7 @@ function arrayToDisplay($dir, $files, $details) {
  * @return	the HTML for the gallery.
  */
 function specialLayout($dir, $files, $details) {
-	$meta = META::getFileMetadata($dir);
+	$meta = META::get($dir);
 	$result = h1('', $meta['short']).p('class:directory');
 	if ($meta['long'] != '') $result .= span('class:file-details', $meta['long']);
 	$result .= p('/');
@@ -424,7 +426,7 @@ function specialLayout($dir, $files, $details) {
 			}
 			
 			list ($w, $h) = getimagesize($filename);
-			$meta = META::getFileMetadata($dir.'/'.$file);
+			$meta = META::get($dir.'/'.$file);
 			$short = $meta['short'];
 
 			if ($w != 0) { // skip bad images
@@ -606,7 +608,7 @@ function mediaItem($file, $location, $details) {
 		$loc = $details['base'];
 	}
 
-	$meta = META::getFileMetadata($loc.'/'.$file);
+	$meta = META::get($loc.'/'.$file);
 	$short = $meta['short'];
 	$long = $meta['long'];
 	$short = str_replace('&', '&amp;', $short);
@@ -974,7 +976,7 @@ function arrayToRSS($dir, $files, $details) {
     append($rss, '<rss version=\'2.0\'>', $rtn);
     append($rss, '<channel>', $rtn); 
 	
-	$meta = META::getFileMetadata($dir);
+	$meta = META::get($dir);
 	$short = $meta['short'];
 	$long = $meta['long'];
 	if ($long == '') $long = $dir;
@@ -994,7 +996,7 @@ function arrayToRSS($dir, $files, $details) {
 	foreach($files as $key => $value) {
 		$location = "$dir/$value";
 		if (is_numeric($key)) { // this is a leaf node (file)
-			$meta = META::getFileMetadata($location.'/'.$value);
+			$meta = META::get($location.'/'.$value);
 
 			$short = str_replace(array('<', '>'), array('&lt;', '&gt;'), $meta['short']);
 			$long  = str_replace(array('<', '>'), array('&lt;', '&gt;'), $meta['long']);

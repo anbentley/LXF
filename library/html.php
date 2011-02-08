@@ -163,31 +163,6 @@ function head($version) {
 }
 
 /**
- * returns a usable HTML name
- *
- * @param	$name	the string to begin with
- * @return	the cleaned up name string
- */
-function goodName($name) {
-	return $name;
-	
-	$alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-	$good = str_split($alphabet.'0123456789-_:.', 1);
-	
-	if (!in_array(substr($name, 0, 1), str_split($alphabet))) $name = 'N'.$name;
-	
-	$expandedname = str_split($name, 1);
-	
-	$name = '';
-	foreach ($expandedname as $value) {
-		if (!in_array($value, $good)) $value = '_';
-		$name .= $value;
-	}
-	
-	return $name;
-}
-
-/**
  * Converts pt size font sizes to relative sizes
  *
  * @param  $fs		the pt size to convert.
@@ -461,7 +436,7 @@ function closeTag($tag) {
  * @param  $contents	optional content for the tag.
  * @return	a string containing an HTML element enclosing the content.
  */
-function tag($tag, $attributes=array(), $contents=null) {	
+function tag($tag, $attributes=array(), $contents=' ') {	
 	return tag($tag, $attributes, $contents);
 }
 
@@ -637,7 +612,7 @@ function getforward($sid) {
  * @return	a boolean indicating the URL was set.
  */
 function setNav($mode, $url, $sid) {
-	return FILE::write("./nav/{$mode}/{$sid}.txt", "\n$url", 'a');
+	return FILE::write("../../sec/chds/nav/{$mode}/{$sid}.txt", "\n$url", 'a');
 }
 
 /**
@@ -650,7 +625,7 @@ function nav($mode, $sid) {
 	$get = str_begins($mode, 'get');
 	if ($get) $mode = substr($mode, 3);
 	
-	$data = FILE::read("./nav/{$mode}/{$sid}.txt");
+	$data = FILE::read("../../sec/chds/nav/{$mode}/{$sid}.txt");
 	$urls = explode("\n", $data);
 	
 	if (is_array($urls)) {
@@ -669,7 +644,7 @@ function nav($mode, $sid) {
 		if ($line != '') $data .= "\n".$line;
 	}
 	
-	FILE::write("./nav/{$mode}/{$sid}.txt", $data, 'w');
+	FILE::write("../../sec/chds/nav/{$mode}/{$sid}.txt", $data, 'w');
 	
 	return $url;
 }
@@ -889,7 +864,7 @@ function tag($tag, $attributes='', $contents=null) {
 			if (get('absolute-references') && in_array($name, array('src', 'href')) && !str_begins($value, 'http')) {
 				$value = page('fullHost').$value;
 			}
-			$value = str_replace(array("'", '"'), array('&#34;', '&#39;'), $value); // clean up any quotes
+			//$value = str_replace('&#39;', '&quote;', $value); // clean up any quotes
 			if (($value != '') || ($tag == 'option')) append($result, $name.'="'.$value.'"', ' ');
 		}
 				
@@ -963,6 +938,8 @@ function meta($attributes='') { return tag('meta', $attributes, ''); }
 
 function nbsp($number=1) { return str_repeat('&nbsp;', $number); }
 
+function ol($attributes='', $contents=null) { return tag('ol', $attributes, $contents); }
+
 function olist($attributes='') { return tag('ol', $attributes, ''); }
 
 function optgroup($attributes='', $contents=null) { return tag('optgroup', $attributes, $contents); }
@@ -992,6 +969,8 @@ function th($attributes='', $contents=null) { return tag('th', $attributes, $con
 function thead($attributes='', $contents=null) { return tag('thead', $attributes, $contents); }
 
 function tr($attributes='', $contents=null) { return tag('tr', $attributes, $contents); }
+
+function ul($attributes='', $contents=null) { return tag('ul', $attributes, $contents); }
 
 function ulist($attributes='', $contents=null) { return tag('ul', $attributes, $contents); }
 

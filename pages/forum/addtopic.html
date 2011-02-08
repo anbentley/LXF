@@ -1,0 +1,118 @@
+<?php 
+// add sticky form fields
+// add lock to form
+if(isset($_REQUEST["id"])){
+	$categoryid=$_REQUEST["id"];
+	$forum=new FORUM;
+	$forum->getForumFromCategory($categoryid);
+	$category=$forum->getCategory($categoryid);
+	$_page["subtitle"]="Forums: Add Topic to '".$category["title"]."'";
+	if(isset($_REQUEST["addtopic"])){
+		$addtopic=$_REQUEST["addtopic"];
+		if(!isset($addtopic["sticky"])){
+			$addtopic["sticky"]=0;
+		}		
+		if(!isset($addtopic["anonymous"])){
+			$addtopic["anonymous"]=0;
+		}	
+		$addtopic['content']=strip_tags(stripslashes($addtopic['content']),'<a><p><b><strong><u><strike><img><ul><ol><li><blockquote><hr>');
+		$addtopic['title']=strip_tags(stripslashes($addtopic['title']));
+		if(isset($_FILES['addtopicfiles'])){
+			$addtopicfiles=$_FILES['addtopicfiles'];
+			$addtopic["files"]="";
+			$tempstring="";
+			for($x=0;$x<count($addtopicfiles["name"]);$x++){
+				$filename=trim(basename($addtopicfiles["name"][$x]));
+				if(!empty($filename)){
+					$target_path = $_site["datafolder"] . "general/file/" . $filename;
+					if(file_exists($target_path)){
+						$errormessage="A file by the name of " . $filename . " already exists.  Unable to add file.";
+					} elseif(!move_uploaded_file($addtopicfiles['tmp_name'][$x], $target_path)) {
+		    			$errormessage="There was an error uploading the file, please try again!";
+					} else {
+						$addtopic["files"].=$filename . "\r\n";
+						if(isset($addtopic["filelabels"])){				
+							$tempstring.=$addtopic["filelabels"][$x] . "\r\n";
+						}
+					}
+				}
+			}
+			$addtopic["filelabels"]=$tempstring;
+		}
+		$id=$forum->addPost($addtopic);
+		if(isset($_REQUEST["topictags"])){
+			TAG::setTagRelations("forum",$id,$_REQUEST["topictags"]);
+		}
+		if(empty($errormessage)){
+			header("Location: /?p=forum/displayposts&id=".$id);
+		}
+	}
+	if(!empty($errormessage)&&!empty($id)){
+		echo '
+			<div class="ui_message">Your topic was added, however the following error occurred:</div>
+			<div class="ui_error">'.$errormessage.'</div>
+			<div class="ui_message">Click <a href="/?p=forum/displayposts&id='.$id.'">here</a> to continue.</div>
+		';
+	} else {
+		echo "<div class='breadcrumb'><a href='/?p=forum/display'>" . $forum->forum["title"] . "</a> &gt; <a href='/?p=forum/displaytopics&id=" . $category['id'] . "'>".$category['title']."</a> &gt; <a href='" . $_SERVER['REQUEST_URI']. "'>Add Topic</a>";
+		echo "<div id='forumcolumn'>";
+		echo "<div class='heading'>".$category['title']."</div>";
+		UI::portletStart("","","postreply");
+		echo '
+		<div class="forumform">
+			<form action="' . $_SERVER['REQUEST_URI']. '" method="post"/>
+	
+				<input type="hidden" name="addtopic[categoryid]" value="' . $category['id'] . '"/>
+				<label>Subject</label>
+				<input type="text" name="addtopic[title]" size="100" value=""/>
+				<label>Content</label>
+		';
+		$oFCKeditor = new FCKeditor('addtopic[content]');
+		$oFCKeditor->ToolbarSet = 'KnowvitBasic';
+		$oFCKeditor->Value="";
+		$oFCKeditor->Create() ;
+		foreach(TAG::getTagList('topical') as $tag){
+			$topictags[$tag["id"]]=$tag["tag"];
+		}
+		echo '
+				<div class="filefield">
+					<div class="ui_formdiv">
+						<label>Attach a file</label>
+						<input type="file" name="addtopicfiles[]" />
+					</div>
+					<div class="ui_formdiv">
+						<label>Name</label>
+						<input type="text" name="addtopic[filelabels][]" size="60" value=""/>
+					</div>
+					<div class="clear"></div>
+				</div>	
+				<div class="ui_formdiv">
+					<label>Topic pertains to the following subjects:</label>
+		';
+		UI::CBList("","","topictags",$topictags);
+		echo '
+				</div>
+				<div class="ui_formdiv">
+					<label>Topic pertains to the following regions:</label>
+		';
+		foreach(TAG::getTagList('region') as $tag){
+			$regiontags[$tag["id"]]=$tag["tag"];
+		}	
+		UI::CBList("","regiontags","topictags",$regiontags);
+		echo '
+				</div>
+				<div class="clear"></div>
+				<label>Post Anonymously?</label>
+				<input type="checkbox" name="addtopic[anonymous]" value="1"/>
+				<div class="clear"></div>
+				<input type="submit" value="Add Topic"/>
+			</form>
+		</div>
+		';	
+		UI::portletEnd();		
+		echo "</div>";	
+	}
+} else {
+	header("Location: /?p=forum/display");
+}
+?>

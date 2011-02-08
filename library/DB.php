@@ -80,36 +80,52 @@ function query ($db, $query, $params=array()) {
 		$stmt = $dbh->prepare($query);
 		foreach ($params as $key => $value) {
 			if (is_numeric($key)) $key++;
-			if (!$stmt->bindValue ($key, $value)) { /* bind all passed params */
+			if(strpos($key,'_INT')){
+				$stmt->bindValue ($key, $value,PDO::PARAM_INT);
+			}elseif(strpos($key,'_STR')){
+				$stmt->bindValue ($key, $value,PDO::PARAM_STR);
+			}elseif(!$stmt->bindValue ($key, $value)) { /* bind all passed params */
 				DEBUG::display('BIND of '.$key.' as '.$value.' FAILED');
 			}
 		}
 		
-		if ($stmt->execute()) { /* sucessful execution */
+		if (@$stmt->execute()) { /* sucessful execution */
 			switch ($type) {
 				case 'insert':
-					$rows = $dbh->lastInsertId();
+					$rows = @$dbh->lastInsertId();
 					break;
 					
 				case 'delete':
 				case 'update':
-					$rows = $stmt->rowCount();
+					$rows = @$stmt->rowCount();
 					break;
 					
 				default:
-					$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+					$rows = @$stmt->fetchAll(PDO::FETCH_ASSOC);
 			}
-			
-			$stmt->closeCursor();
+			@$stmt->closeCursor();
 			$dbh = null;
 			
 			if ($rows == array()) $rows = false;
 			
 			return $rows;
 		} else {
-			$err = $stmt->errorInfo();
+			$err = @$stmt->errorInfo();
 			$dbh = null;
-			
+			if(!empty($err)){
+				if(!is_numeric(strrpos($err[2],'aggregates'))){
+					$user = get_auth_info('CHDS_login');
+					$userid = AUTH::iduser($user);
+					$userid = (is_null($userid)) ? 0 : $userid;
+					$trace = print_r(debug_backtrace(), true);
+					$errors = print_r($err,true);
+					$stringData = "\n".str_replace(array("\r\n", "\n", "\r"),'',$userid.'|||'.$err[2].'['.$errors.']|||'.$query.'|||'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'].' FROM: '.$_SERVER['REMOTE_ADDR'].'|||'.date('m/d/Y h:i:s A').'|||'.$trace.'|||');
+					$myFile = "/var/www/html/sec/chds/pages/errors/errors.txt";
+					$fh = @fopen($myFile, 'a');
+					fwrite($fh, $stringData);
+					fclose($fh);
+				}
+			}
 			$rows = false;
 		}
 	} catch (Exception $e) {
@@ -121,6 +137,103 @@ function query ($db, $query, $params=array()) {
 	return $rows;
 }
 
+/**
+ * Executes a query using PDO
+ *
+ * @param  $db		the name of the database to perform the query on.
+ * @param  $query	the SQL text of the query.
+ * @param  $params	a keyed array to use for parameter replacement. PDO style query parameters are supported.
+ *					they are of the form :name
+ * @return			dependent on type of query as determined by first word of the query
+ *					for INSERT the last key inserted is returned
+ *					for DELETE or UPDATE the number of records affected is returned
+ *					for all other queries the data retrieved is returned
+ * @see				connect
+ */
+function execute($db, $query, $params=array()) {
+	list($type) = explode(' ', $query, 2); // determine type of query
+	$type = strtolower($type);
+		
+	$dba = self::get_dbaccess($db);
+	
+	$connect = $dba['dbtype'].':host='.$dba['dbhost'].';dbname='.$db;
+	$account = $dba['dbaccount'];
+	$code	 = $dba['dbcode'];
+    
+	$dbh = new PDO($connect, $account, $code, array(PDO::ERRMODE_EXCEPTION => true, PDO::ATTR_PERSISTENT => false, PDO::ATTR_EMULATE_PREPARES=>true));
+	if ($dbh === false) return false;
+	
+	$statement = $dbh->prepare($query);
+	
+	foreach ($params as $key => $value) {
+		if (is_numeric($key)) $key++;
+		if (strpos($key,'_INT')){
+			$statement->bindValue ($key, $value,PDO::PARAM_INT);
+			
+		} else if (strpos($key,'_STR')){
+			$statement->bindValue ($key, $value,PDO::PARAM_STR);
+			
+		} else if (!$statement->bindValue ($key, $value)) { /* bind all passed params */
+			DEBUG::display('BIND of '.$key.' as '.$value.' FAILED');
+			return false;
+		}
+	}
+	
+	if (@$statement->execute()) { /* sucessful execution */
+		switch ($type) {
+			case 'insert':
+				$result = @$dbh->lastInsertId();
+				$dbh = null;
+				break;
+				
+			case 'delete':
+			case 'update':
+				$result = @$statement->rowCount();
+				$dbh = null;
+				break;
+				
+			default:
+				$result = $statement;
+		}
+	}
+	
+	return $result;
+}
+
+/** 
+ * Fetches rows from an executed statement
+ *
+ * @param	$statement	the executed statement
+ * @param	$rows		the number of rows or '*' to return all rows.
+ * @return	the requested rows
+ */
+function fetch($statement, $rows=1) {
+	if ($rows == '*') {
+		$result = @$statement->fetchAll(PDO::FETCH_ASSOC);
+		@$statement->closeCursor();
+	} else {
+		$result = array();
+		while (($row = @$statement->fetch(PDO::FETCH_ASSOC)) && ($rows > 0)) {
+			$rows--;
+			$result[] = $row;
+		}
+		if (!$row) @$statement->closeCursor();
+	}
+	
+	// no records returned
+	if ($result == array()) $result = false;
+	
+	return $result;
+}
+
+/**
+ * Closes an executed statement
+ * 
+ * @param	$statement	the executed statement
+ */
+function close($statement) {
+	@$statement->closeCursor();
+}
 
 /**
  * Executes an INSERT query. This method builds a valid INSERT query which it then passed to query for execution.
@@ -208,10 +321,10 @@ function update($db, $table, $fields, $keys, $v1=null, $v2=null, $expected=1) {
 		
         $f = array();
         $k = array();
-		if (is_array($fields) && is_array($keys)) $f = array_combine($keys, $fields);
+		if (is_array($fields) && is_array($keys)) $f = array_combine($fields, $keys);
 		
 		if (is_array($v2)) $k = array_combine($v1, $v2);
-
+		
 		return self::update($db, $table, $f, $k, null, null, $expected);
 	}
 
@@ -481,28 +594,57 @@ function getDateTime() {
  *
  * @param	$array	the results array.
  * @return	the HTML formatted table.
- * @see		smart_merge
+ * @see		UTIL::merge
  */
 function queryToTable($array, $options=array()) {
 	if (!is_array($array)) return '';
     
-    $defaults = array('class' => 'basictable');
-	$options = smart_merge($defaults, $options);
+    $defaults = array(
+		'class' => 'basictable',
+	);
 	
-	$result = tr('class:titles');
+	$options = UTIL::merge($defaults, $options);
+	$class = '';
+	
+	$class = ' class="'.$options['class'].'"';
+	
+	$result = '<table'.$class.'>'."\n";
+	$result .= '<tr class="titles">';
 	$titles = array_keys($array[0]);
-	foreach ($titles as $item) $result .= td('', $item);
-	$result .=  tr('/');
+	foreach ($titles as $item) {
+		$result .= '<td>'.$item.'</td>';
+	}
+	$result .=  '</tr>'."\n";
 	
 	foreach ($array as $row) {
 		if (is_array($row)) {
-            $result .= tr('');
-			foreach ($titles as $item) $result .= td('', $item);
-			$result .=  tr('/');
+            $result .= '<tr>';
+            foreach ($row as $key => $item) {
+                $result .= '<td>'.$item.'</td>';
+            }
+			$result .=  '</tr>'."\n";
         }
 	}
+	$result .= '</table>'."\n";
 	
-	return table('class:'.$options['class'], $result);
+	return $result;
+}
+
+
+function hasSQL($string){
+	if(
+		preg_match('/select.+from/',strtolower($string))||
+		preg_match('/drop.+table/',strtolower($string))||
+		preg_match('/drop.+database/',strtolower($string))||
+		preg_match('/drop.+user/',strtolower($string))||
+		preg_match('/drop.+index/',strtolower($string))||
+		preg_match('/delete.+from/',strtolower($string))||
+		preg_match('/alter.+table/',strtolower($string))||
+		preg_match('/insert.+into/',strtolower($string))
+	){
+		return true;
+	}
+	return false;
 }
 
 }

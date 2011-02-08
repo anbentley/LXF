@@ -4,11 +4,65 @@
 	margin: 10px;
 	float: left;
 	width: 100%;
+	position:relative;
 }
 
 .select_bar_right {
 	float: right;
 	width: 100%;
+	position:relative;
+}
+
+div.admin_select_button2, 
+div.admin_select_button2_on,
+div.select_button2, 
+div.select_button2_on {
+	display: inline;
+	border: none;
+	background: none;
+	padding: 0;
+	margin: 0;
+	width: auto;
+	overflow: visible;					
+	text-align: center;	
+	white-space: nowrap;	
+	height: 17px;
+	line-height: 17px;
+}
+
+div.admin_select_button2 span,
+div.admin_select_button2 span a,
+div.admin_select_button2_on span,
+div.admin_select_button2_on span a,
+div.select_button2 span,
+div.select_button2 span a,
+div.select_button2_on span,
+div.select_button2_on span a {
+	padding-bottom: 5px;
+	height: 17px;
+	line-height: 17px;			
+	margin: 0;
+	color: #FFF;
+}
+
+div.admin_select_button2 span,
+div.admin_select_button2_on span,
+div.select_button2 span,
+div.select_button2_on span {
+	padding-top: 2px;
+	padding-left: 5px;
+	background: url(images/ui_off.png) no-repeat 0 0;
+}
+
+div.admin_select_button2 span a, 
+div.admin_select_button2_on span a,
+div.select_button2 span a, 
+div.select_button2_on span a {
+	padding-top: 2px;
+	text-decoration: none;
+	font-style: normal;
+	padding-right: 5px;
+	background: url(images/ui_off.png) no-repeat 100% 0;
 }
 
 .admin_select_button,
@@ -24,6 +78,7 @@
 .select_button,
 .select_button_on {
 	float: right;
+	position:relative;
 }
 
 .select_bar_left .select_button,
@@ -31,6 +86,7 @@
 .admin_select_button,
 .admin_select_button_on {
 	float: left;
+	position:relative;
 }
 
 .admin_select_button_on a,

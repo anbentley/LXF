@@ -1,10 +1,1 @@
-<?php
-
-$drm = param('drm');
-$f = param('f');
-$altf = param('altf');
-$mode = param('mode', 'value', 'inline');
-
-FILE::serve($drm, $f, $mode, $altf);
-
-?>
+<?php FILE::serve(param('drm'), param('f'), param('mode', 'inline'), param('altf')); ?>

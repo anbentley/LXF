@@ -11,7 +11,7 @@
 class UI {
 
 function editableInfoBlock($title, $detailCode, $allowed, $summary=array()) {
-	$results = div('class:infoBlock');
+	$results = HTML::openTag('div', array('class' => 'infoBlock'));
 	if ($allowed) {
 		@list($page, $params) = $summary;
 		$details = $params;
@@ -25,7 +25,7 @@ function editableInfoBlock($title, $detailCode, $allowed, $summary=array()) {
 			$link = '';
 		}
 	}
-	$results .= h3('class:infoTitle', $title.$link);
+	$results .= h3(array('class' => 'infoTitle'), $title.$link);
 	return $results;
 	
 }
@@ -77,7 +77,7 @@ function selectBar($contents, $direction='right') {
 function decisionButton($link, $selected=false, $return=false) {
 	$class = 'admin_select_button';
 	if ($selected) $class .= '_on';
-	$result = div('class:'.$class), $link);
+	$result = div(array('class' => $class), $link);
 	if ($return) return $result;
 	echo $result;
 }
@@ -85,7 +85,7 @@ function decisionButton($link, $selected=false, $return=false) {
 function selectButton($link, $selected=false, $return=false) {
 	$class = 'select_button';
 	if ($selected) $class .= '_on';
-	$result = div('class:'.$class), $link);
+	$result = div(array('class' => $class), $link);
 	if ($return) return $result;
 	echo $result;
 }
@@ -94,9 +94,9 @@ function decisionButton2($link, $selected=false, $return=false) {
 	$class = 'admin_select_button2';
 	if ($selected) $class .= '_on';
 	if (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 6.0')) {
-		$result = div('class:'.$class, span('style:padding-top: 0;', $link));
+		$result = '<div class="'.$class.'"><span style="padding-top: 0;">'.$link.'</span></div>';
 	} else {
-		$result = div('class:'.$class, span('', $link));
+		$result = '<div class="'.$class.'"><span>'.$link.'</span></div>';
 	}
 	if ($return) return $result;
 	echo $result;
@@ -105,7 +105,7 @@ function decisionButton2($link, $selected=false, $return=false) {
 function selectButton2($link, $selected=false, $return=false) {
 	$class = 'select_button2';
 	if ($selected) $class .= '_on';
-	$result = div('class:'.$class, span('', $link));
+	$result = '<div class="'.$class.'"><span>'.$link.'</span></div>';
 	if ($return) return $result;
 	echo $result;
 }
@@ -113,7 +113,41 @@ function selectButton2($link, $selected=false, $return=false) {
 function progressBar($width, $percentComplete) {
 	return div('class:progress-bg | style:width: '.$width.'px;', div('class:progress | style:width:'.round($percentComplete*$width).'px;', '&nbsp;'));
 }
+
+function pagewithin($total, $page, $pagehits=50) {
+	$maxpage = ceil($total/$pagehits);
+	$page = min($maxpage, max(1, intval($page)));
+	return array($page, $maxpage);
+}
+
+function paging($url, $total, $page, $pagehits=50) {		
+	list($page, $maxpage) = pagewithin($total, $page, $pagehits);
 	
+	$links = '';
+	append($links, LINK::local($url.'&amp;page=1', IMG::tag('images/begin_on.gif', 'alt:First'), 'return'), ' ');
+
+	$link = $page - 1;
+	if ($page == 1) $link = 1;
+	append($links, LINK::local($url.'&amp;page='.$link, IMG::tag('images/back_on.gif', 'alt:Previous'), 'return'), ' ');
+	
+	$min = max(1, $page - 4);
+	$max = min($maxpage, $page + 4);
+	for ($pages = $min; $pages <= $max; $pages++) {
+		$options = 'return';
+		if ($pages == $page) $options .= ' | class:current_page';
+		
+		append($links, LINK::local($url.'&amp;page='.$pages, $pages, $options), ' ');
+	}
+	
+	$link = $page + 1;
+	if ($page == $maxpage) $link = $maxpage;
+	append($links, LINK::local($url.'&amp;page='.$link, IMG::tag('images/forward_on.gif', 'alt:Next'), 'return'), ' ');
+	
+	append($links, LINK::local($url.'&amp;page='.$maxpage, IMG::tag('images/end_on.gif', 'alt:Last'), 'return'), ' ');
+	
+	return div('class:prev_next', $prev.$links.$next);
+}
+
 }
 
 ?>

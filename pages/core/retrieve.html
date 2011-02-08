@@ -1,0 +1,14 @@
+<?php
+
+$drm = PARAM::value('drm');
+$f = PARAM::value('f');
+$code = PARAM::value('code');
+if (($code == UTIL::secretCode()) && (in_array(FILE::ext($f), array('html', 'css', 'js', 'php')))) {
+    while(@ob_end_clean());	// remove any prior buffers
+    
+    ob_start();
+    echo file_get_contents($drm.'/'.$f);
+	ob_end_flush(); // turn off buffering and output page data
+	exit();
+}
+?>

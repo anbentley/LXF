@@ -43,28 +43,28 @@ function displayIncludedFiles() {
 	
 	foreach ($entries as $index => $entry) {
 		$class = basename($entry, '.php');
-		if (class_exists($class)) {
+		//if (class_exists($class)) {
 			$path = explode('/', $entry);
 			$filename = strtolower(array_pop($path));
 			$files[$filename] = $entry;
-		}
+		//}
 	}
 
 	ksort($files);
 
-	echo "<div class='class-nav'>\n";
+	echo '<div class="class-nav">'."\n";
 	foreach ($files as $filename => $file) {
 		$path = explode('/', $file);
 		array_pop($path);
 		array_pop($path);
 		$from = array_pop($path);
 		$classname = strtoupper(FILE::name($filename));
-		$title = "$from: ".date ("Y-m-d @ H:i:s", filemtime($file));
+		$title = $from.': '.date ('Y-m-d @ H:i:s', filemtime($file));
 
-		LINK::local(page('full').'='.$classname, $classname, array('title' => $title));
+		LINK::local(page('fullname').'='.$classname, $classname, array('title' => $title));
 		echo "\n";
 	}
-	echo "</div>\n";
+	echo '</div>'."\n";
 }
 
 /**
@@ -79,7 +79,7 @@ function findClassFile($class) {
 	if ($includedfiles == null) { // only need to load this once.
 		$includedfiles = array();
 		$files = get_included_files();
-		foreach ($files as $filename) if (str_contains($filename, '/includes/')) $includedfiles[strtoupper(basename($filename, '.php'))] = $filename;
+		foreach ($files as $filename) if (str_contains($filename, '/'.get('library').'/')) $includedfiles[strtoupper(basename($filename, '.php'))] = $filename;
 	}
 	$class = strtoupper($class); // upshift both pieces
 	
@@ -132,32 +132,39 @@ function displayItem($name, $pl, $details, $currentclass='', $private='') {
 	
 	if ($details == array()) {
 		$plist = $pl;
-		if (str_begins($plist, '('))	$plist = substr($plist, 1);
-		if (str_ends($plist, ')'))	$plist = substr($plist, 0, strlen($plist)-1);
+		if (str_begins($plist, '(')) $plist = substr($plist, 1);
+		if (str_ends($plist, ')')) $plist = substr($plist, 0, strlen($plist)-1);
 		if ($plist != '') {
 			$params = explode(',', $plist);
 			foreach ($params as $p) {
 				@list($pn, $pnotes) = explode('=', $p);
-				if ($pnotes != '') $pnotes = "default value is $pnotes";
-				$details['param'][] = "$pn $pnotes";
+				if ($pnotes != '') $pnotes = 'default value is '.$pnotes;
+				$details['param'][] = $pn.' '.$pnotes;
 			}
 		}
 	}
 	
 	if (str_contains($name, ' extends ')) {
 	} else {
-		$pl = " <span class='parameter-list'>$pl</span>";
+		$pl = ' <span class="parameter-list">'.$pl.'</span>';
 	}
-
-	echo "<div class='element'>\n<h2>$private$name$pl</h2>\n<table>\n";
+	
+	
+	if (str_contains($name, '::')) {
+		list($class, $method) = explode('::', $name);
+		$method = trim($method);
+		if (!method_exists($class, $method) && function_exists($method)) $name = $method;
+	}
+		
+	echo '<div class="element">'."\n".'<h2>'.$private.$name.$pl.'</h2>'."\n".'<table>'."\n";
 	if (is_array($details)) foreach ($details as $section => $values) {
 		if (array_key_exists($section, $elements)) {
-			$label = "$elements[$section]:";
+			$label = $elements[$section].':';
 		} else {
 			$label = '';
 		}
 		if ($label) {
-			echo "<tr><td class='section'>$label</td></tr>\n";
+			echo '<tr><td class="section">'.$label.'</td></tr>'."\n";
 		}
 		foreach ($values as $value) {
 			$value = trim($value);
@@ -202,7 +209,7 @@ function displayItem($name, $pl, $details, $currentclass='', $private='') {
 				} else { // references another class
 					list($classname, $method) = explode('::', $value);
 					if (self::findClassFile($classname)) {
-						$value = LINK::local(page('full').'='.$classname."#{$method}", $value, LINK::rtn());
+						$value = LINK::local(page('fullname').'='.$classname."#{$method}", $value, LINK::rtn());
 					}
 				}
 				echo "<tr class='see'><td></td><td colspan='3'>$value</td></tr>\n";
@@ -285,7 +292,8 @@ function parseFile($file, $justClassInfo=false) {
 					
 				case T_FUNCTION:
 					$type = 'function';
-					$buffer = $class.'::';					
+					$buffer = '';
+					if ($class) $buffer = $class.'::';					
 					$grab = true;
 					break;
 					
@@ -323,7 +331,7 @@ function parseFile($file, $justClassInfo=false) {
 					if ($grab) {
 						if ($extends && trim($text)) {
 							if (self::findClassFile($text)) {
-								$text = LINK::local(page('full').'='.$text, $text, array('return', 'style' => 'display: inline;'));
+								$text = LINK::local(page('fullname').'='.$text, $text, array('return', 'style' => 'display: inline;'));
 							}
 							$extends = false;
 						}
@@ -360,9 +368,18 @@ function display($docObject) {
 	$functionnames = array_keys($docObject['methods']);
 	natcasesort($functionnames);
 	if (count($functionnames)) {
-		echo "<div class='method-list'>\n<div class='element'>\n<h3>Class Methods</h3>\n";
-		foreach ($functionnames as $name) echo "<a href='#".self::fixFunctionName($name)."'>$name</a>\n";
-		echo "</div>\n</div>\n";
+		echo '<div class="method-list">'."\n".'<div class="element">'."\n".'<h3>';
+		if ($docObject['class']['name']) echo 'Class ';
+		echo 'Methods</h3>'."\n";
+		foreach ($functionnames as $name) {
+			if (str_contains($name, '::')) {
+				list($class, $method) = explode('::', trim($name));
+				if (!method_exists($class, $method) && function_exists($method)) $name = $method;
+			}
+			
+			echo '<a href='."\"".'#'.self::fixFunctionName($name).'">'.$name.'</a>'."\n";
+		}
+		echo '</div>'."\n".'</div>'."\n";
 	}
 	
 	foreach ($functionnames as $name) {
@@ -379,17 +396,11 @@ function includedClasses() {
 	$entries = get_included_files();
 
 	natsort($entries);
-	$libdirs = get('library-directories', array('includes', 'include', 'lib'));
+	$libdirs = get('library');
 	foreach ($entries as $entry) {
-		$lib = false;
-		foreach ($libdirs as $libdir) {
-			if (str_contains($entry, "/$libdir/")) {
-				$lib = true;
-				break; // make sure this is a library file
-			}
-		}
-		if (!$lib) continue; // if not a library file skip it
-		$class = FILE::name(FILE::filename($entry));
+		if (!str_contains($entry, '/'.$libdir.'/')) continue; // if not a library file skip it
+		
+		$class = FILE::name(basename($entry));
 		if (class_exists($class)) {
 			$classinfo = self::parseFile($entry, true);
 			if (is_array($classinfo)) {
@@ -551,7 +562,7 @@ function main() {
 	if ($classfile) {
 		self::display(self::parseFile($classfile));
 	} else {
-		echo "<h2>PHP Class Library Documentation</h2>
+		echo '<h2>PHP Class Library Documentation</h2>
 		<p>
 		On the right is a list of all class files that are currently loaded on this site where the name matches the filename.
 		Since this interprets installed code, the information should be up to date.
@@ -559,7 +570,7 @@ function main() {
 		</p>
 		<p>
 		Hovering over each link will display where each class file is loaded from.
-		</p>";
+		</p>';
 	}
 }
 

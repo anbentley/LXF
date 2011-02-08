@@ -1,0 +1,86 @@
+div.class-nav {
+	float: right; 
+	position: relative; 
+	width: 8em; 
+	border: 1px solid #DDD; 
+	margin-left: 1em; 
+	padding: 10px; 
+	background-color: #FFF;
+}
+
+div.class-nav a, div.element a {
+	display: block;
+}
+
+div.element {
+	border-bottom: 1px solid #DDD;
+	padding: .5em;
+}
+
+.element h2 {
+	padding: 1em 0 0 0;
+}
+
+.element .param, .element .param-value {
+	font-weight: bold;
+	width: 8em;
+	color: #555;
+	border-bottom: 1px dotted #EEE;
+}
+
+.element .param-value {
+	font-weight: normal;
+}
+
+.element .detail-comment {
+	font-style: italic;
+	padding-top: 1em;
+}
+
+.element table {
+	margin-left: 1em; 
+	width: 80%;
+}
+
+.element table td {
+	vertical-align: top;
+}
+
+.element .section {
+	width: 7em;
+	font-style: italic;
+	color: #555;
+}
+
+.element .comments {
+	font-style: normal;
+	font-size: .85em;
+}
+
+.element .comments-blank {
+	font-style: normal;
+	font-size: .5em;
+}
+
+.element .toplink {
+	font-size: smaller;
+	color: #777;
+}
+
+.element .parameter-list {
+	font-size: smaller;
+	color: #444;
+	font-family: sans-serif;
+}
+
+.element .basictable .comments, .element .basictable .comments-blank {
+	display: none;
+}
+
+.method-list a:hover {
+	background-color: #EEE;
+}
+
+.history {
+	font-size: .85em;
+}

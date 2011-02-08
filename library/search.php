@@ -4,7 +4,8 @@
  * SEARCH provides a means to search the contents of pages on the site.
  * 
  * @author	Alex Bentley
- * @history	6.0	added ability to search limited databases for content.
+ * @history	7.0	generalized directory names
+ *			6.0	added ability to search limited databases for content.
  *			5.0	undated and simplified cetain function names and such
  *			4.5	better handling of case insensitive search
  *			4.4	simplified search logic
@@ -115,13 +116,13 @@ function findline ($source, $target, $offset, $options) {
 	$actual = substr($sourceline, $local, strlen($target));
 	$highlighted = htmlencode($before).span('class:search-text', htmlencode($actual)).htmlencode($after);
 
-	$line = "$linecount ".str_replace(array("\t", "\n"), array('    ', "\n        "), $highlighted)."\n";
+	$line = $linecount.' '.str_replace(array("\t", "\n"), array(str_repeat(' ', 4), "\n".str_repeat(' ', 7)), $highlighted)."\n";
 	
 	return array('offset' => $eline+1, 'line' => $line);
 }
 
 /**
- * Returns an array of pages containing the search terms, this call can be recursive.
+ * Returns an array of files containing the search terms, this call can be recursive.
  *
  * @param	$dir		the directory to search.
  * @param	$files		the list of files.
@@ -138,10 +139,17 @@ function searchFiles($dir, $files, $searchtext, $options) {
 	if (!$dir) return $results;
 
 	$mapping = $options['map'];
+	$baseDirectories = array(
+		get('pages-directory'), 
+		get('css-directory'), 
+		get('parts-directory'), 
+		get('library-directory'), 
+		get('javascript-directory'),
+	);
 	
 	foreach($files as $subdir => $file) {
 		if (!is_array($file)) {
-			$realfile = str_replace('//', '/', "$dir/$file");
+			$realfile = str_replace('//', '/', $dir.'/'.$file);
 			$content = file_get_contents($realfile);
 			if ($found = preg_match($searchtext, $content)) {
 				if ($options['show']) {
@@ -167,18 +175,18 @@ function searchFiles($dir, $files, $searchtext, $options) {
 				append($pd, $page, '/');
 				$page = $pd;
 				
-				if ($options['developer']) $title = "[{$realfile}]";
+				if ($options['developer']) $title = '['.$realfile.']';
 				
-				if ($options['developer'] || in_array('pages', $pathitems) || $mapped) { // we've located a file to include.
-					if (in_array('pages', $pathitems) && (!in_array($base, array('pages', 'css', 'parts', 'includes', 'jsincludes')))) { // this is a "site" page, so prefix it correctly
-						$page = "$base:".substr($page, 6);
+				if ($options['developer'] || in_array(get('pages-directory'), $pathitems) || $mapped) { // we've located a file to include.
+					if (in_array('pages', $pathitems) && (!in_array($base, $baseDirectories))) { // this is a "site" page, so prefix it correctly
+						$page = $base.':'.substr($page, 6);
 					}
 					$results[$page] = array('title' => $title, 'found' => $found);
 				}
 			}
 		} else {
 			$current = FILE::name($subdir);
-			if (!in_array("-$current", $options['where'])) {
+			if (!in_array('-'.$current, $options['where'])) {
 				if ($newresults = self::searchFiles($subdir, $file, $searchtext, $options)) $results = array_merge($results, $newresults);
 			}
 		}
@@ -283,7 +291,7 @@ function execute($searchtext, $options=array()) {
 		}
 	}
 
-	$pattern = "/$pattern/";
+	$pattern = '/'.$pattern.'/';
 	if (!$options['case-sensitive']) $pattern .= 'i';
 	
 	if (DEBUG::on() && $options['show']) echo h4('', 'Pattern is '.$pattern);

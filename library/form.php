@@ -43,7 +43,8 @@
  * The function getFieldPairs($field) can be used to obtain the name => value pairs returned by the form
  *
  * @author	Alex Bentley
- * @history	7.1		fully implemented filter_var for data validation
+ * @history	7.2		added encryption on upload as an option.
+ *			7.1		fully implemented filter_var for data validation
  *			7.0		embedded support for compound names in form creation and verification
  *			6.0     Converted all tag calls to short tags
  *          5.19    updated the processing of the action option
@@ -230,7 +231,6 @@ function endform() {
  *		prefix;		;					during display; put this text before the value.
  *		suffix;		;					during display; put this text after the value.
  *		hidden;		false;				a boolean to indicate if this item is not visible to the user.
- *		use-entities;	false;			a boolean to indicate if htmlentities should be called on values.
  
  * @details	text elements
  *		size;		30;                 the size of this text field in characters.
@@ -271,7 +271,7 @@ function endform() {
  *		format;		;                   a value indicating special formatting { timestamp | time }.
  */
 function applyDefaults($def, $type, $options='') {
-	$defaults = 'value:PARAM | class:field | id: | label: | name: | type: | title: | readonly: | required:false | fixed:false | display:false | style: | prefix: | suffix: | hidden:false | use-entities:false';
+	$defaults = 'value:PARAM | class:field | id: | label: | name: | type: | title: | readonly: | required:false | fixed:false | display:false | style: | prefix: | suffix: | hidden:false';
 	
 	switch ($type) {
 		case 'text':
@@ -643,7 +643,9 @@ function compositeDefinition($type, $field) {
  */
 function expandFields($fields) {
 	$expanded = array();
-	$envParams = get('environment-params', array());
+	$envParams = page('environment');
+	if (!$envParams) $envParams = array();
+	
     foreach ($fields as $field) {
 		if (is_string($field)) $field = strtoarray($field);
 		
@@ -670,14 +672,14 @@ function expandFields($fields) {
 			}
 			$expanded[] = $field;
 		}
-        if (array_key_exists('name', $field)) {
+        if (array_key_exists('name', $field) && is_array($envParams)) {
             $name = $field['name'];
             $key = array_search($name, $envParams);
             if ($key) unset ($envParams[$key]);
         }
 	}
 	
-	foreach ($envParams as $param) $expanded[] = array('element' => 'text', 'hidden', 'name' => $param);
+	foreach ((array)$envParams as $param) $expanded[] = array('element' => 'text', 'hidden', 'name' => $param);
 	
 	return $expanded;
 }
@@ -712,9 +714,7 @@ function text($def) {
 	$result .= $def['label-tag'];
 
 	if ($def['type'] == 'hidden') $def['size'] = '';
-	
-	if (!is_array($def['value']) && !$def['password']) $def['value'] = self::HTMLclean($def['value']);
-	
+		
 	if ($def['display']) {
 		if ($def['value'] != '') $result .= p('', $def['value']);
 		
@@ -728,16 +728,16 @@ function text($def) {
 			$attrs['cols'] = $def['size'];
 			$attrs['rows'] = $def['rows'];
 			$tag = 'textarea';
-			$contents = $def['value'];
+			$contents = htmlentities($def['value']);
+			if ($contents == null) $contents = '';
 			unset($attrs['type']);
 		} else {
 			$attrs['size'] = $def['size'];
-			$attrs['value'] = $def['value'];
+			$attrs['value'] = htmlentities($def['value']);
 			if ($def['maxlength'] > 0) $attrs['maxlength'] = $def['maxlength'];
 			$tag = 'input';
 			$contents = '';
-		}
-		if ($def['use-entities']) $attrs['value'] = htmlentities($attrs['value']);
+		} 
 
 		$result .= tag($tag, $attrs, $contents);
 	}
@@ -748,24 +748,6 @@ function text($def) {
 
 	return $result;
 }
-
-/**
- * Converts a simple array to a keyed array with matching keys and values.
- *
- * @param	$array	the simple array.
- * @return	the keyed array.
- */
-function normalizeKeys($array) {
-	$result = array();
-	foreach ($array as $key => $value) {
-		
-		if (!is_string($value)) $value = $key;
-		$result[$key] = $value;
-	}
-	
-	return $result;
-}
-
 
 function badListValue() {
 	return '~@~';
@@ -788,8 +770,6 @@ function popup($def) {
     
 	$def = self::expandListValues($def);
     
-	if ($def['normalize']) $def['values'] = self::normalizeKeys($def['values']);
-    		
 	if ($def['element'] == 'popup') {
         $def['size'] = 0;
         $def['multiple'] = '';
@@ -830,7 +810,7 @@ function popup($def) {
 				$result .= optgroup('/');
 
 			} else {
-				if (($option !== false) && ($option == $def['value'])) {
+				if (($option !== false) && ((string)$option == (string)$def['value'])) {
 					$result .= option('selected:selected | value:'.$option, $optval);
 				} else {
 					$result .= option('value:'.$option, $optval);
@@ -843,7 +823,7 @@ function popup($def) {
 				$result .= optgroup('label:'.$option);
 
 				foreach ($optval as $key => $value) { // use array name as prefix for returned value
-					if ($key == $def['value']) {
+					if ($key === $def['value']) {
 						$result .= option('selected:selected | value:'.$key, $value);
 					} else {
 						$result .= option('value:'.$key, $value);
@@ -852,7 +832,7 @@ function popup($def) {
 				$result .= optgroup('/');
 				
 			} else {
-				if (($option !== false) && ($option == $def['value'])) {
+				if (($option !== false) && ($option === $def['value'])) {
 					$result .= option('selected:selected | value:'.$option, $optval);
 				} else {
 					$result .= option('value:'.$option, $optval);
@@ -1118,9 +1098,19 @@ function expandListValues($def) {
 		}
 	}
 	
+	if ($def['normalize']) {
+		$values = array_values($def['values']);
+		$def['values'] = array_combine($values, $values);
+	}
+	
 	return $def;
 }
 
+function normalizeKeys($array) {
+	$values = array_values($array);
+	return array_combine($values, $values);	
+}
+	
 /**
  * Processes the submit w/validation for a form definition
  *
@@ -1164,7 +1154,8 @@ function verify ($fielddefs, $options='') {
 
 			$reqd = $def['required'];
             
-			$value = param($def['name']); // since form has been submitted, use the passed value, not the default ($def['value'])
+			$value = html_entity_decode(param($def['name'])); // since form has been submitted, use the passed value, not the default ($def['value'])
+			
 			if (in_array($def['element'], array('hidden', 'comment', 'group', 'group-end', 'html'))) {
 				// don't validate
                 if ($def['element'] == 'group') {
@@ -1203,8 +1194,8 @@ function verify ($fielddefs, $options='') {
                         }
 					} else if (($def['element'] == 'popup') || ($def['element'] == 'listbox')) {
 						if ($reqd) {
-							$def = self::expandListValues($def);							
-							if (!in_array($value, array_keys($def['values'])) || str_begins($value, self::badListValue())) {
+							$def = self::expandListValues($def);
+							if (!array_has_key($value, $def['values']) || str_begins($value, self::badListValue())) {
 								$def['title'] = 'You must make a selection from '.$def['label']; // return field label
 								$failed[] = $def['title'];
 								$def['error'] = 'required';
@@ -1427,7 +1418,7 @@ function getFieldPairs($field, $additions=array()) {
 				$value = param($def['name']);
 			}
 			
-			$fields[$def['name']] = self::HTMLclean($value);
+			$fields[$def['name']] = $value;
 		}
 	}
 	
@@ -1445,19 +1436,6 @@ function getFieldPairs($field, $additions=array()) {
 	if (is_array($envParams)) foreach ($envParams as $param) unset($fields[$param]);
 	
 	return $fields;
-}
-
-/**
- * Converts raw data to HTML acceptable data.
- *
- * @param	$value	the value to process.
- * @return	the cleaned up value.
- */
-function HTMLclean($value) {
-	$value = htmlentities($value, ENT_QUOTES);
-	$value = UTIL::characterCleanup($value);
-	
-	return $value;
 }
 
 /**
@@ -1518,11 +1496,12 @@ function getFieldType($name, $type='') {
 function validateField($def, $value) {	
 	$fieldtype = self::getFieldType($def['name'], $def['type']);
 	$valid = true;
-	$invalidLabel = em($def['name']).' <strong>&ldquo;'.htmlentities($value).'&rdquo;</strong> is not a valid '.$fieldtype;
+	$invalidLabel = em($def['name']).' <strong>&ldquo;'.$value.'&rdquo;</strong> is not a valid '.$fieldtype;
 	
 	switch ($fieldtype) {
 		case 'email':
-			$valid = filter_var($value, FILTER_VALIDATE_EMAIL);
+			$email = '/^(['."'".'a-zA-Z0-9_\-])+(\.(['."'".'a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))$/';
+			$valid = preg_match($email, $value);
 			if ($valid) return true;
 			
 			$valid = $invalidLabel;
@@ -1539,8 +1518,10 @@ function validateField($def, $value) {
 			);
 			if ($options) $filter['options'] = $options;
 			
-			$valid = filter_var($value, $filter);
-			if (!$valid) $valid = $invalidLabel;
+			$valid = filter_var($value, FILTER_DEFAULT, $filter);
+			if ($valid) return true;
+			
+			$valid = $invalidLabel;
 			break;
 			
 			break;
@@ -1579,7 +1560,7 @@ function validId($id) {
 function handleUpload($options='') {
 	$defaults = array(
 		'file-id' => 'file',							// name of field in form
-		'file-dir' => get('file_directory_web'),	// directory to put file into
+		'file-dir' => get('file_directory'),	// directory to put file into
 		'filename' => '',							// retain original file name
 		'allowed-extensions' => array('*'),			// allow all
 		'replace' => false,						// don't overwrite existing file
@@ -1587,8 +1568,7 @@ function handleUpload($options='') {
 		'unzip' => false,						// unzip a zip file on a completed upload
 	);
     
-	if (is_string($options)) $options = strtoarray($options);
-	$options = smart_merge($defaults, $options);
+	$options = smart_merge($defaults, strtoarray($options));
 
 	$success = true;
 	$reason = '';
@@ -1612,7 +1592,7 @@ function handleUpload($options='') {
 	
 	// make sure upload directory exists
 	if ($success) {
-		$upload_directory = $options['file-dir'];
+		$upload_directory = get('site-directory').$options['file-dir'];
 		
 		if (!is_dir($upload_directory)) {
 			$success = @mkdir($upload_directory);
@@ -1622,7 +1602,6 @@ function handleUpload($options='') {
 	
 	if ($success) {
 		$uploadfile = $upload_directory.'/'.$name;
-		
 		// see if there is a collision
 		if (file_exists($uploadfile)) {
 			if ($options['replace']) {
@@ -1639,12 +1618,13 @@ function handleUpload($options='') {
 		$old = substr(sprintf('%o', fileperms('/tmp')), -4);
 		@chmod($tempfile, 0777);
 		@chmod($upload_directory, 0777);
-		
-//		DEBUG::display(substr(sprintf('%o', fileperms($tempfile)), -4));
-//		DEBUG::display(substr(sprintf('%o', fileperms($upload_directory)), -4));
-		
+				
 		if ($success) {
-			eval('$success = '.$options['transfer-method'].'($tempfile, $uploadfile);');
+			$tm = $options['transfer-method'];
+			if (($checkpolicy = get('encryption-policy')) && @call_user_func($checkpolicy, $uploadfile)) $tm = 'encrypt_uploaded_file';
+			$success = call_user_func($tm, $tempfile, $uploadfile);
+			if (file_exists($uploadfile)) $success = true;
+			
 			if (!$success) $reason = 'file could not be saved (possibly too large or file security issues)';
 		}
 		
@@ -1882,4 +1862,20 @@ function allowEdit($name, $sourcefile, $content, $size=80, $data=array()) {
 
 } // end FORM class
 
+/**
+ * Moves an uploaded file to the desired location after encrypting it.
+ *
+ * @param	$filename		uploaded file to encrypt.
+ * @param	$destination	the name the file is supposed to take after it's been encrypted.
+ * @return					a boolean indicating the success of the operation.
+ */
+function encrypt_uploaded_file($filename, $destination) {
+	if (!file_exists($filename) || !is_file($filename) || !is_uploaded_file($filename)) return false;
+	
+	$result = FILE::encrypt($filename, $destination);
+	@unlink($filename);
+	return $result;
+}
+				
+				
 ?>

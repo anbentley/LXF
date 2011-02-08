@@ -30,6 +30,15 @@ div, p, dt, dd, table, ol, ul, dl, img {
   page-break-inside: avoid !important;
 }
 
+/*
+#printfooter {
+  position: relative;
+  margin-top: auto;
+  margin-bottom: 0;
+  display: block;
+}
+*/
+
 .pagebreak {
 	page-break-before: always;
 	margin-bottom: 20px;

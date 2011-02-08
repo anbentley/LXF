@@ -1,7 +1,7 @@
 <div id="footer">
 <?php
 $os = $_SERVER['HTTP_USER_AGENT'];
-$p = page('site', ':').page();
+$p = PARAM::site(':').PARAM::page();
 
 $uri = urlencode("$_SERVER[SCRIPT_URI]?$_SERVER[QUERY_STRING]");
 
@@ -19,9 +19,9 @@ LINK::external("http://validator.w3.org/check?uri=$uri", ' | ');
 </div>
 <div id='printfooter'></div>
 <?php
-if(get('environment-params')){
+if(INIT::get('environment-params')){
 	DEBUG::display("Environment Variables: ");
-	DEBUG::display(get('environment-params'));
+	DEBUG::display(INIT::get('environment-params'));
 }
 DEBUG::dump();
 ?>

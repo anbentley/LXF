@@ -4,8 +4,7 @@
  * META manages metadata about files.
  * 
  * @author	Alex Bentley
- * @history	3.1		removal of INIT class dependence
- *			3.0		major rewrite of functions to streamline processing
+ * @history	3.0		major rewrite of functions to streamline processing
  *			2.0		improved XML metadata handling of & characters.
  *			1.6		removed dependence on ABOUT class
  *			1.5		updated documentation
@@ -36,26 +35,25 @@ function metafile($name) {
  * @return	the metadata associated with this file.
  * @see		metafile
  */
-function getMetadata($name) {	
-	$metaobject = NULL;
-	
+function getMetadata($name) {			
+	$metaobject = array();
 	$metafile = self::metafile($name);
+
 	if (file_exists($metafile)) {
 		switch (FILE::ext($metafile)) {
 			case 'xml':
 				$xml = simplexml_load_file($metafile);
-				$metaobject = array();
-				foreach ($xml->children() as $child) {
-					$name = $child->getName();
-					switch ($name) {
-						case 'file':
-							$fileentry = array();
-							foreach ($child->children() as $field) $fileentry[$field->getName()] = trim((string)$field);
-							$metaobject['directory']['file'][$fileentry['name']] = $fileentry;
-							break;
-						default:
-							$metaobject['directory'][$child->getName()] = trim((string)$child);
-					}
+				foreach (array('short', 'long', 'icon') as $field) {
+					$metaobject[$field] = array_shift($xml->xpath('/directory/'.$field));
+					if (is_object($metaobject[$field])) $metaobject[$field] = strval($metaobject[$field]);
+				}
+				foreach ($xml->xpath('/directory/file') as $fileentry) {
+					$file = array();
+					$file['name'] = strval($fileentry->name);
+					$file['short'] = strval($fileentry->short);
+					$file['long'] = strval($fileentry->long);
+
+					$metaobject['file'][$file['name']] = $file;
 				}
 				break;
 			
@@ -66,75 +64,68 @@ function getMetadata($name) {
 			default:
 		}
 	} 
-	
-	if ($metaobject != NULL && is_array($metaobject['directory'])) {
-		if (is_file($name)) {
-			if (!array_key_exists('file', $metaobject['directory']) || !array_key_exists($file, $metaobject['directory']['file'])) {
-				$file = basename($name);
-				$metaobject['directory']['file'][$file] = array(
-					'name' => $file,
-					'short' => $file,
-					'long' => '',
-				);
-			}
-		} else { // dir
-			if (!array_key_exists('icon', $metaobject['directory'])) $metaobject['directory']['icon'] = '';
+
+	$file = basename($name);
+	if (!array_key_exists('short', $metaobject)) {
+		if (is_dir($name)) {
+			$metaobject['short'] = $file;
+		} else {
+			$metaobject['short'] = basename(dirname($name));
 		}
-	
-	// build default metadata if there is none
 	} else {
-		$metaobject = array('directory' => array('short' => dirname($name), 'long' => '', 'icon' => ''));
-		if (is_file($name)) {
-			$file = basename($name);
-			$metaobject['directory']['file'][$file] = array(
-				'name' => $file,
-				'short' => $file,
-				'long' => '',
-			);
-		}
+		if ($metaobject['short'] == '') $metaobject['short'] = dirname($name);
+	}
+	if (!array_key_exists('long', $metaobject)) $metaobject['long'] = '';
+	if (!array_key_exists('icon', $metaobject)) $metaobject['icon'] = '';
+	
+		
+	if (!is_dir($name)) {
+		if (!array_key_exists('file', $metaobject)) $metaobject['file'] = array();
+		if (!array_key_exists($file, $metaobject['file'])) $metaobject['file'][] = array('name' => $file, 'short' => $file, 'long' => '');
 	}
 	
 	return $metaobject;
 }
 
 /**
- * Returns the metadata for a file.
+ * Gets metadata for an entity.
  *
- * @param	$name	the name of the file.
- * @return	the metadata for a file.
+ * @param	$name	the name of the entity.
+ * @param	$fields	the fields to be returned (default is all fields).
+ * @return	the metadata for the entity.
  * @see		getMetadata
  */
-function getFileMetadata($name) {
-	$metaobject = self::getMetadata($name);
+function get ($name, $fields=null) {
+	$meta = self::getMetadata($name);
+	$bname = basename($name);
 	
-	if (is_dir($name)) {
-		$meta = $metaobject['directory'];
-	} else {
-		$meta = $metaobject['directory']['file'][basename($name)];
+	if (is_file($name)) $meta = $meta['file'][$bname];
+
+	if ($meta == null) {
+		$meta = array('name' => $bname, 'short' => $bname, 'long' => '');
 	}
+	
+	if ($fields != null) foreach ($meta as $field => $value) if (!in_array($field, (array)$fields)) unset($meta[$field]);
 	
 	return $meta;
 }
 
 /**
- * Updates the metadata for a file.
+ * Sets metadata for an entity.
  *
- * @param	$name	the name of the file.
- * @param	$meta	the metadata for a file.
+ * @param	$name	the name of the entity.
+ * @param	$values	the metadata values for an entity to update.
  * @see		getMetadata
  * @see		convertMetadataToXML
  */
-function updateMetadata($name, $meta) {
+function set ($name, $values=array()) {
 	$metaobject = self::getMetadata($name);
 	
 	if (is_dir($name)) {
-		$metaobject['directory']['short'] = $meta['short'];
-		$metaobject['directory']['long'] =  $meta['long'];
-		$metaobject['directory']['icon'] =  $meta['icon'];
+		foreach (array('short', 'long', 'icon') as $field) if (array_key_exists($field, $values)) $metaobject[$field] = $values[$field];
 	} else {
 		$file = basename($name);
-		$metaobject['directory']['file'][$file]['short'] = $meta['short'];
-		$metaobject['directory']['file'][$file]['long'] =  $meta['long'];
+		foreach (array('short', 'long') as $field) if (array_key_exists($field, $values)) $metaobject['file'][$file][$field] = $meta[$field];
 	}
 	
 	$xml = self::convertMetadataToXML($metaobject);
@@ -149,11 +140,11 @@ function updateMetadata($name, $meta) {
  * @see		getMetadata
  * @see		convertMetadataToXML
  */
-function sanitizeMetadata($name) {	
+function clean($name) {	
 	$metaobject = self::getMetadata($name);
 	
 	$files = FILE::getlist(dirname($name));
-	foreach ($metaobject['directory']['file'] as $file => $details) if (!in_array($element, $files)) unset($metaobject['directory']['file'][$file]);
+	foreach ($metaobject['file'] as $file => $details) if (!in_array($element, $files)) unset($metaobject['file'][$file]);
 	
 	$xml = self::convertMetadataToXML($metaobject);
 	
@@ -168,17 +159,16 @@ function sanitizeMetadata($name) {
  */
 function convertMetadataToXML($metaobject) {
 	$xml = new SimpleXMLElement('<directory></directory>');
-	$item = $metaobject['directory'];
 	$fields = array('short', 'long', 'icon');
-	foreach ($fields as $field) $xml->addChild($field, $item[$field]);
+	foreach ($fields as $field) $xml->addChild($field, $metaobject[$field]);
 
-	foreach ($metaobject['directory']['file'] as $item) {
+	foreach ($metaobject['file'] as $item) {
 		$child = $xml->addChild('file');
-		$fields = array_keys($item);
-		foreach ($fields as $field) $child->addChild($field, str_replace('&', '&amp;', str_replace('&amp;', '&', $value)));
+		if ($item['name'] == '') continue;
+		foreach (array('name', 'short', 'long') as $field) $child->addChild($field, str_replace('&', '&amp;', str_replace('&amp;', '&', $item[$field])));
 	}
 	$xml = $xml->asXML();
-	
+
 	return $xml;
 }
 

@@ -42,62 +42,142 @@ class UTIL {
  * @param  $append		the string to append.
  * @param  $separator	the string to use as a separator.
  */
-function append () {
-    alias('append');
+function append (&$string, $append, $separator='') {
+    append($string, $append, $separator);
 }
 
-/**
- * Attempts to extract a string from between two strings. 
- * The function is greedy in that it looks for the first and last occurances of the prefix and suffix respectively.
- *
- * @param	$haystack	the string you are checking.
- * @param	$prefix		the string that preceeds the piece you want.
- * @param	$suffix 	the string that follows the piece you want.
- * @param   $sensitive  boolean indicating if comparison is case sensitive (default).
- * @return	the string between.
- */
-function str_between() {
-    alias('str_between');
-}
-
-/**
- * Checks to see if the beginning of the string matches the test value(s).
- *
- * @param	$haystack	the string you are checking the beginning of.
- * @param	$needle		the string or array of strings you are comparing against. If an array is passed, any match is returned as true.
- * @param	$sensitive	boolean indicating if comparison is case sensitive.
- * @param	$returnKey	a boolean indicating if the key of the array should be returned.
- * @return	the boolean result of the comparison.
- */
-function str_begins() {
-    alias('str_begins');
-}
-
-/**
- * Checks to see if the end of the string matches the test value. 
- *
- * @param	$haystack	the string you are checking the end of.
- * @param	$needle		the string or array of strings you are comparing against. If an array is passed, any match is returned as true.
- * @param	$sensitive	boolean indicating if comparison is case sensitive.
- * @param	$returnKey	a boolean indicating if the key of the array should be returned.
- * @return	the boolean result of the comparison.
- */
-function str_ends() {
-    alias('str_ends');
-}
-
-/**
- * Checks to see if the string contains the test value. 
- *
- * @param	$haystack	the string you are checking.
- * @param	$needle		the string or array of strings you are comparing against. If an array is passed, any match is returned as true.
- * @param	$sensitive	boolean indicating if comparison is case sensitive.
- * @param	$returnKey	a boolean indicating if the key of the array should be returned.
- * @return	the boolean result of the comparison.
- */
-function str_contains() {
-    alias('str_contains');
-}
+	/**
+	 * Checks to see if the beginning of the string matches the test value(s).
+	 *
+	 * @param	$haystack	the string you are checking the beginning of.
+	 * @param	$needle		the string or array of strings you are comparing against. If an array is passed, any match is returned as true.
+	 * @param	$sensitive	boolean indicating if comparison is case sensitive.
+	 * @param	$returnKey	a boolean indicating if the key of the array should be returned.
+	 * @return	the boolean result of the comparison.
+	 */
+	function str_begins($haystack, $needle, $sensitive=true, $returnKey=false) {
+		if ($haystack == '') return false;
+		
+		if (!is_array($needle)) $needle = array(1 => $needle);
+		$hlen = strlen($haystack);
+		
+		foreach ($needle as $key => $pin) {
+			$plen = strlen($pin);
+			if ($plen > $hlen) continue; // needle must be less than or equal to test string
+			if (!$returnKey) $key = true;
+			
+			if ($sensitive) {
+				if (!strncmp($haystack, $pin, $plen)) return $key;
+			} else {
+				if (!strncasecmp($haystack, $pin, $plen)) return $key;
+			}
+		}
+		
+		// none of the test strings matched
+		return false;
+	}
+	
+	/**
+	 * Checks to see if the end of the string matches the test value. 
+	 *
+	 * @param	$haystack	the string you are checking the end of.
+	 * @param	$needle		the string or array of strings you are comparing against. If an array is passed, any match is returned as true.
+	 * @param	$sensitive	boolean indicating if comparison is case sensitive.
+	 * @return	the boolean result of the comparison.
+	 */
+	function str_ends($haystack, $needle, $sensitive=true, $returnKey=false) {
+		if ($haystack == '') return false;
+		if (!is_array($needle)) $needle = array(1 => $needle);
+		$hlen = strlen($haystack);
+		
+		foreach ($needle as $key => $pin) {
+			$plen = strlen($pin);
+			if ($plen > $hlen) continue; // needle must be less than or equal to test string
+			if (!$returnKey) $key = true;
+			
+			if ($sensitive) {
+				if (!strcmp(substr($haystack, $hlen-$plen), $pin)) return $key;
+			} else {
+				if (!strcasecmp(substr($haystack, $hlen-$plen), $pin)) return $key;
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Checks to see if the string contains the test value. 
+	 *
+	 * @param	$haystack	the string you are checking.
+	 * @param	$needle		the string or array of strings you are comparing against. If an array is passed, any match is returned as true.
+	 * @param	$sensitive	boolean indicating if comparison is case sensitive.
+	 * @param	$returnKey	if true, returns the needle matched, if false returns a boolean indicating if any were found.
+	 * @param	$direction	indicates how to evaluate the needle { first | last }.
+	 * @return	the boolean result of the comparison.
+	 */
+	function str_contains($haystack, $needle, $sensitive=true, $returnKey=false, $direction='first') {
+		if ($haystack == '') return false;
+		if (!is_array($needle)) $needle = array(1 => $needle);
+		
+		if ($direction == 'first') {
+			if ($sensitive) $compare = 'strpos'; else $compare = 'stripos';
+		} else {
+			if ($sensitive) $compare = 'strrpos'; else $compare = 'strripos';
+		}
+		
+		$hlen = strlen($haystack);
+		
+		$matches = array();
+		
+		foreach ($needle as $key => $pin) {
+			$plen = strlen($pin);
+			if ($plen > $hlen) continue; // needle must be less than or equal to test string
+			
+			$result = @$compare($haystack, $pin);
+			if ($result !== false) $matches[$pin] = $result;
+		}
+		
+		if (count($matches)) {
+			sort($matches);
+			if ($direction == 'left') {
+				$key = array_shift(array_keys($matches));
+			} else {
+				$key = array_pop(array_keys($matches));
+			}
+			if (!$returnKey) $key = true;
+			
+			return $key;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Attempts to extract a string from between two strings. 
+	 * The function is greedy in that it looks for the first and last occurances of the prefix and suffix respectively.
+	 *
+	 * @param	$haystack	the string you are checking.
+	 * @param	$prefix		the string that preceeds the piece you want.
+	 * @param	$suffix 	the string that follows the piece you want.
+	 * @param   $sensitive  boolean indicating if comparison is case sensitive (default).
+	 * @return	the string between.
+	 */
+	function str_between($haystack, $prefix, $suffix, $sensitive=true) {
+		if ($haystack == '') return false;
+		$len = strlen($prefix);
+		if ($sensitive) {
+			if (($start = strpos($haystack, $prefix)) && ($end = strrpos($haystack, $suffix))) {
+				$start = $start + strlen($prefix);
+				return substr($haystack, $start, $end-$start);
+			}
+		} else {
+			if (($start = stripos($haystack, $prefix)) && ($end = strripos($haystack, $suffix))) {
+				$start = $start + strlen($prefix);
+				return substr($haystack, $start, $end-$start);
+			}
+		}
+		
+		return '';
+	}
 	
 /**
  * Walks an array to find an element based on a set of array keys
@@ -115,12 +195,12 @@ function str_contains() {
  * @return	the entry of the element in question or $default if not found.
  * @see		array_extract
  */
-function array_extract () {
-    alias('array_extract');
+function array_extract ($array, $keys, $default='', $defaultIfEmpty=true) {
+    return array_extract($array, $keys, $default, $defaultIfEmpty);
 }
 
-function show() {
-	alias('display');
+function show($value, $label='', $mode='') {
+	return display($value, $label, $mode);
 }
 
 /**
@@ -171,8 +251,8 @@ function extract_data ($data, $array=null, $default='') {
  * @param  $replace	the array to merge into the starting array, or a string to convert to an array first.
  * @return			the new merged array.
  */
-function merge() {
-	alias('smart_merge');
+function merge($base, $replace) {
+	return smart_merge($base, $replace);
 }
 
 /**
@@ -181,8 +261,8 @@ function merge() {
  * @param  $size		the byte count.
  * @return				the string representation of the kinder value.
  */
-function normalize() {
-	alias('normalize');
+function normalize($size) {
+	return normalize($size);
 }
 
 /**
@@ -479,12 +559,12 @@ function chrdecode($text) {
  * @param	$string		the string to process
  * @return	the array
  */
-function stringToArray() {
-	alias('strtoarray');
+function stringToArray($string) {
+	return strtoarray($string);
 }
 
-function arrayToString() {
-	alias('arraytostr');
+function arrayToString($array) {
+	return arraytostr($array);
 }
 
 function setConsoleColor($foreground='', $background='', $cmd='') {

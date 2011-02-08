@@ -1,122 +1,118 @@
 <?php
 
 /**
- * CRYPT provides a generalized encryption solution by providing a simplified interface to the mcrypt PHP module.
- * 
- * @author      Alex Bentley
- * @history     1.3		removed dependence on ABOUT class
- *				1.2		updated to include basic encryption
- *				1.0		initial release
- */
- 
+* CRYPT provides a generalized encryption solution by providing a simplified interface to the mcrypt PHP module.
+* 
+* @author	Alex Bentley
+* @history	1.0		initial release
+*/
+
 class CRYPT {
 
-/**
- * Encrypts a block of data using the supplied key using the specified method. 
+/** encrypt a complete block of data
  *
- * @param  $key		the value to use as the key value for encryption.
- * @param  $data	the data to encrypt.
- * @param  $method	the mcrypt method to use
- * @return			the encrypted block of data.
- * @see				execute
- */
-function en ($key, $data, $method=MCRYPT_CAST_256) {
-	return CRYPT::execute($key, $data, $method, true);
-}
-
-/**
- * Decrypts a block of data using the supplied key using the specified method. 
+ *	@param   $data    data
+ *	@param   $key
+ *	@param   $base64   base64 encode
  *
- * @param  $key		the value to use as the key value for decryption.
- * @param  $data	the data to decrypt.
- * @param  $method	the mcrypt method to use
- * @return			the decrypted block of data.
- * @see				execute
+ *	@return  encrypted data or false on error
  */
-function de ($key, $data, $method=MCRYPT_CAST_256) {
-	return CRYPT::execute($key, $data, $method, false);
-}
-
-/**
- * Encrypts or decrypts a block of data using the supplied key using the specified method. 
- *
- * @param  $key		the value to use as the key value for encryption/decryption.
- * @param  $data	the data to encrypt/decrypt.
- * @param  $method	the mcrypt method to use
- * @param  $encrypting	true if encryption is desired.
- * @return			the encrypted/decrypted block of data.
- * @see				en
- * @see				de
- */
-private function execute ($key, $data, $method, $encrypting) {
-	/* Open module, and create IV */ 
-	$td = mcrypt_module_open($method, '', MCRYPT_MODE_CBC, '');
-
-	$key = substr($key, 0, mcrypt_enc_get_key_size($td));
-	$iv_size = mcrypt_enc_get_iv_size($td);
-	$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+function encrypt ($data, $key, $base64=false) {
 	
-	/* Initialize encryption handle */
-	if (mcrypt_generic_init($td, $key, $iv) != -1) {	   
-		if ($encrypting) {
-			$result = mcrypt_generic($td, $data);
-		} else {
-			$result = mdecrypt_generic($td, $data);
-		}
-		
-		mcrypt_generic_deinit($td);
-		mcrypt_module_close($td);
-	}
-	return $result;
-}
-
-/**
- * Encrypts/decrypts a block of data using the supplied key using a simplistic method. 
- *
- * @param  $key		the value to use as the key value for encryption/decryption.
- * @param  $data	the data to encrypt/decrypt.
- * @return			the encrypted/decrypted block of data.
- * @see				en
- * @see				de
- */
-function simple ($data, $key=null) {
-	if ($key == null) $key = get('simple-key');
+	if (!$td = mcrypt_module_open('rijndael-256', '', 'ctr', '')) return false;
 	
-	$key = crypt($key, $key);
-
-	// make sure key is at least as long as the data
-	while (strlen($data) > strlen($key)) $key .= crypt(md5($key), md5($key));
-
-	// xor all bytes in the original data
-	for ($i = 0; $i < strlen($data); $i++) $data[$i] = ~($data[$i] ^ $key[$i]);
-
+	$iv = mcrypt_create_iv(mcrypt_enc_get_iv_size($td), MCRYPT_RAND);
+	
+	if (mcrypt_generic_init($td, $key, $iv) !== 0) return false;
+	
+	$data = serialize($data);
+	
+	$data	= mcrypt_generic($td, $data);
+	$data	= $iv.$data;
+	$mac	= self::keygen($data, $key, 1000, 32);
+	$data  .= $mac;
+	
+	mcrypt_generic_deinit($td);
+	mcrypt_module_close($td);
+	
+	if ($base64) $data = base64_encode($data);
+	
 	return $data;
 }
 
-/* convenience functions */
-
-/**
- * Encrypts a block of data using the supplied key using the AES mcrypt method. 
+/** decrypt a block of data
  *
- * @param  $key		the value to use as the key value for encryption.
- * @param  $data	the data to encrypt.
- * @return			the encrypted block of data.
- * @see				execute
+ *	@param   $data
+ *	@param   $key		encryption key
+ *	@param   $base64	base64 decode
+ *
+ *	@return  decrypted data or false on error
  */
-function encryptAES ($key, $data) {
-	return self::execute($key, $data, MCRYPT_RIJNDAEL_256, true);
+function decrypt ($data, $key, $base64=false) {
+	
+	if ($base64) $data = base64_decode($data);
+	
+	if (!$td = mcrypt_module_open('rijndael-256', '', 'ctr', '')) return false;
+	
+	$iv		= substr($data, 0, 32);
+	$em		= substr($data, strlen($data) - 32);
+	$data	= substr($data, 32, strlen($data)-64);
+	$mac	= self::keygen($iv.$data, $key, 1000, 32);
+	
+	// verify embedded mac matches and mcrypt can be initialized
+	if (($em !== $mac) || (mcrypt_generic_init($td, $key, $iv) !== 0)) return false;
+	
+	$data = unserialize(mdecrypt_generic($td, $data));
+	
+	mcrypt_generic_deinit($td);
+	mcrypt_module_close($td);
+	
+	return $data;
+}
+
+/** keygen
+ *
+ *	@param   $password
+ *	@param   $salt
+ *	@param   $count   iteration count (use 1000 or higher)
+ *	@param   $keylen  key length
+ *
+ *	@return  key
+ */
+function keygen ($password, $salt, $count=1000, $keylen) {
+	
+	$algorithym = 'sha256';
+	$hashlen	= strlen (hash($algorithym, null, true));
+	$keyblocks	= ceil ($keylen/$hashlen);
+	$key		= '';
+	
+	for ($block=1; $block <= $keyblocks; $block++) {
+		$iteratedBlock = $blk = hash_hmac($algorithym, $salt.pack('N', $block), $password, true); // hash for this block
+		for ($i = 1; $i < $count; $i++) $iteratedBlock ^= ($blk = hash_hmac($algorithym, $blk, $password, true)); // XOR each iterate
+		$key .= $iteratedBlock; // add iterated block
+	}
+	
+	return substr($key, 0, $keylen);
 }
 
 /**
- * Decrypts a block of data using the supplied key using the AES method. 
+ * encrypt or decrypt a file using ncrypt
  *
- * @param  $key		the value to use as the key value for decryption.
- * @param  $data	the data to decrypt.
- * @return			the decrypted block of data.
- * @see				execute
+ * @param	$in		the input file
+ * @param	$out	the output file
+ * @param	$mode	the direction { d | e }
+ * @param	$key	the key to use
+ * @return	the success of the operation
  */
-function decryptAES ($key, $data) {
-	return self::execute($key, $data, MCRYPT_RIJNDAEL_256, false);
+function ncrypt($in, $out, $mode='e', $key=null) {
+	if ($key == null) {
+		$seed = get('random-seed');
+		$key = CRYPT::keygen(substr($seed, 32, 32), substr($seed, 0, 16), 1000, 32);
+	}
+	$cmd = '/usr/local/bin/ncrypt -'.$mode.' -i '.$in.' -o '.$out.' -k '.substr($seed, 32, 32);
+	exec($cmd, $output, $status);
+	
+	return $status;
 }
 
 }

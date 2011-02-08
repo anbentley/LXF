@@ -1,0 +1,31 @@
+/* Compare CSS file */
+
+.match {
+	background-color: white;
+}
+
+.diff {
+	background-color: #CCF;
+}
+
+.extra {
+	background-color: #CFC;
+}
+
+table.compare {
+	border-collapse: collapse;
+}
+table.compare, table.compare td {
+	border: 1px solid #CCC;
+}
+
+.form div.compare-dir input[type='checkbox'].checkbox, form.form div.compare-dir div.checkradio label {
+    font-weight: bold;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.form div.compare-file input[type='checkbox'].checkbox, .form div.compare-file label {
+    margin-top: 0;
+    padding-top: 0;
+}

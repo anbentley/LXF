@@ -47,24 +47,25 @@ function toolList() {
             'short' => 'GoogleSafe', 
             'description' => 'This allows the developer to check a domain name using the GoogleSafe tool.',
             ),
-       'core/fileTool' => array(
+       'tools:fileTool' => array(
 			'name' => 'Push or Pull Data to Live Server',
 			'short' => 'Push/Pull',
 			'description' => 'This tool allows users to deploy changes they have made on the development server to the live server, 
 				or to retrieve files from the live server to the development server.',
 		),
-       'core/tools&amp;tool=compare' => array(
+/*       'core/tools&amp;tool=compare' => array(
               'name' => 'Compare Dev File to Live Server',
               'short' => 'Compare',
               'description' => 'This tool allows developers to compare a file on the development server to the live server.',
               ),
+ */
        'core/tools&amp;tool=recent' => array(
 			'name' => 'Recent Changes', 
 			'short' => 'Recent', 
 			'description' => 'This page is intended to show recent updates to the libraries.
 				This will be updated periodically to allow developers to learn about new methods, classes, or other elements as they become available.',
 		),
-		"http://$_SERVER[HTTP_HOST]/admin/phpMyAdmin" => array(
+		'https://'.page('host').'/admin/phpMyAdmin/' => array(
 			'name' => 'PHPMyAdmin', 
 			'short' => 'PHPMyAdmin', 
 			'description' => 'This tool provides access to the PHPMYAdmin page.',
@@ -199,32 +200,31 @@ function siteSearch() {
 	
 	// get configured directories
 	$maindirs = array(
-		'pages' =>		array('value' => 'on',		'label' => 'pages',			'title' => 'search for text in pages'),
-		'parts' =>		array('value' => 'on',		'label' => 'parts',			'title' => 'search for text in parts'),
-		'includes' =>	array('value' => 'on',		'label' => 'includes',		'title' => 'search for text in library files',   'subdirs' => 'pages'),
-		'css' =>		array('value' => 'PARAM',	'label' => 'css',			'title' => 'search for text in css files',       'subdirs' => 'pages'),
-		'jsincludes' =>	array('value' => 'PARAM',	'label' => 'javascript',	'title' => 'search for text in javascript files','subdirs' => 'pages'),
-		'conf' =>		array('value' => 'PARAM',	'label' => 'conf',			'title' => 'search for text in configuration files'),
-		'images' =>		array('value' => 'skip'),
+		'pages' =>			array('value' => 'on',		'label' => 'pages',			'title' => 'search for text in pages'),
+		'parts' =>			array('value' => 'on',		'label' => 'parts',			'title' => 'search for text in parts'),
+		'library' =>		array('value' => 'on',		'label' => 'library',		'title' => 'search for text in library files',   'subdirs' => 'pages'),
+		'css' =>			array('value' => 'PARAM',	'label' => 'css',			'title' => 'search for text in css files',       'subdirs' => 'pages'),
+		'javascript' =>		array('value' => 'PARAM',	'label' => 'javascript',	'title' => 'search for text in javascript files','subdirs' => 'pages'),
+		'configuration' =>	array('value' => 'PARAM',	'label' => 'configuration',			'title' => 'search for text in configuration files'),
+		'images' =>			array('value' => 'skip'),
 	);
 	
 	$host = $_SERVER['HTTP_HOST'];
-	list($dp, $sitename, $ext) = explode('.', $host);
+	$sitename = basename(get('site-directory'));
 	
-	$packages = get('include', array());
-	$packages[$sitename] = '../'.$sitename.'/';
+	$packages = array_merge(get('packages', array()), get('extensions', array()));
+	$packages[$sitename] = get('site-directory');
 	
-	$topdirs = array_keys(FILE::getlist('.', array('file-ext' => 'dir', 'ignore' => array_keys($maindirs))));
+	$topdirs = array_keys(FILE::getlist($packages[$sitename], array('file-ext' => 'dir', 'ignore' => array_keys($maindirs))));
 	$tdirs = array();
-	foreach ($topdirs as $tdir) {
-		$td = substr($tdir, 2);
-		
-		$nextdirs = FILE::getlist($td, array('file-ext' => 'dir'));
+	foreach ($topdirs as $tdir) {		
+		$tdir = $packages[$sitename].basename($tdir);
+		$nextdirs = FILE::getlist($tdir, array('file-ext' => 'dir'));
 		if ($nextdirs) {
 			$nextdirs = array_keys($nextdirs);
 			foreach ($maindirs as $testdir => $details) {
-				if (($details['value'] != 'skip') && in_array($td.'/'.$testdir, $nextdirs) && !in_array($td.'/', $packages)) {
-					$tdirs[] = $td;
+				if (($details['value'] != 'skip') && in_array($tdir.'/'.$testdir, $nextdirs) && !in_array($tdir.'/', $packages)) {
+					$tdirs[] = $tdir;
 					break;
 				}
 			}
@@ -269,7 +269,7 @@ function siteSearch() {
 		$field[] = array('element' => 'group', 'class' => 'search-directories');
 		$field[] = array('element' => 'checkbox', 'name' => 'directory[a~l~l]', 'label' => '<strong><em>search all</em></strong>', 'title' => 'checking this searches all subdirectories', 'class' => 'inline');
 		foreach ($tdirs as $tdir) {
-			$tdirlabel = $tdir;
+			$tdirlabel = basename($tdir);
 			if (in_array($tdir, $devnames)) $tdirlabel = '<strong>'.$tdir.'</strong>';
 			$field[] = array('element' => 'checkbox', 'name' => 'directory['.$tdir.']', 'label' => $tdirlabel, 'class' => 'inline');
 		}	
@@ -321,7 +321,6 @@ function siteSearch() {
 		
 		$dirs = array_unique($dirs);
 		sort($dirs);
-		
 		$searchoptions = array(
 			'file-ext' => $searchext,
 			'where' => $dirs,
@@ -384,38 +383,42 @@ function displayRecent() {
 			'cm' => 'General Comments:',
 		);
 
-		echo "<h1>Changes to PHP Libraries since <strong><em>$title</em></strong></h1>\n";
-		foreach ($changes as $section => $names) {
+		echo "<h1>Changes to LXF Libraries since <strong><em>$title</em></strong></h1>\n";
+		if ($changes) foreach ($changes as $section => $names) {
 			if ($names) {
 				echo "<br /><h2>$titles[$section]</h2>\n";
 				echo "<ul class='recent-change-list'>\n";
 				foreach ($names as $name => $desc) {
 					echo "<li class='recent'>";
+					$class = '';
 					switch ($section) {
-						case 'af':
-						case 'uf':
 						case 'al':
 						case 'ul':
+						case 'af':
+						case 'uf':
 							@list($class, $fname) = explode('::', $name);
+							if (in_array($class, array('intrinsics', 'site'))) $name = $fname;
+							
 							if (PHPDOC::findClassFile($class)) { // only show classes relevent to this site.
 								$linkname = $class;
+								$pound = '';
 								if ($fname) {
-									$linkname .= '#'.PHPDOC::fixFunctionName($fname);
+									$pound = PHPDOC::fixFunctionName($fname);
 									$classversion = '';
 								} else {
 									$classversion = PHPDOC::versionNumber($class);
 								}
-								echo LINK::local("dev:core/doc=$linkname", "$name $classversion", LINK::rtn())." <span class='description'>$desc</span>";
+								echo LINK::paramtag('', array(page() => $linkname, 'tool' => 'doc', '#' => $pound), $name.' '.$classversion, LINK::rtn()).' '.span('class:description', $desc);
 							}
 							break;
 							
 						case 'rf':
 						case 'rl':
-							echo "$name <span class='description'>$desc</span>";
+							echo $name, ' ', span('class:description', $desc);
 							break;
 						
 						case 'cm':
-							if (!is_numeric($name)) echo "<span class='lead-in'>$name</span><br />";
+							if (!is_numeric($name)) echo span('class:lead-in', $name), br();
 							echo $desc;
 							break;
 						default:
@@ -440,20 +443,22 @@ function displayRecent() {
 		}
 		echo "</div>\n";
 	}
+	page('environment', null);
 
-	$dir = FILE::get('core/recent', 'parts');
+	$dir = SITE::file('parts/recent');
+
 	if (is_dir($dir)) {
-		$recentFiles = FILE::getlist($dir, array('file-ext' => 'html'));
-
+		$recentFiles = FILE::getlist($dir, array('file-ext' => 'html', 'absolute'));
+		
 		$allchanges = array();
-		foreach ($recentFiles as $file) {
-			$f = "$dir/$file";
+		if ($recentFiles) foreach ($recentFiles as $file) {
+			$f = $dir.'/'.$file;
 			include $f; // grab all these
 			$allchanges[FILE::name($file)] = $changes;
 		}
 		krsort($allchanges);
 
-		$current = param('when', 'value', array_shift(array_keys($allchanges)));
+		$current = param('when', array_shift(array_keys($allchanges)));
 
 		showArchive($allchanges, $current);
 
@@ -463,8 +468,8 @@ function displayRecent() {
 
 function compare () {
 	$server = $_SERVER['HTTP_HOST'];
-    $site = param('site', 'value', 'core');
-    $dir = param('dir', 'value', '../'.$site);
+    $site = param('site', 'core');
+    $dir = param('dir', '../'.$site);
     
     $filelist = FILE::getlist($dir, array('file=ext' => array('html', 'css', 'js', 'php')));
     $dirs = array();

@@ -15,6 +15,17 @@ Typical xHTML markup for rounded elements
 	<b class='b4b'></b><b class='b3b'></b><b class='b2b'></b><b class='b1b'></b>
 </div>
 
+Typical color replacement CSS
+
+#rounded .boxcontent .header { background-color: gray; color: white; }
+#rounded .b1, #rounded .b2 { border-left-color: gray; border-right-color: gray; }
+#rounded .b3, #rounded .b4, #rounded .b4b, #rounded .b3b, #rounded .boxcontent { border-left-color: gray; border-right-color: gray; }
+#rounded .b2b { border-left-color: gray; border-right-color: gray; } 
+#rounded .b1b { border-left-color: gray; border-right-color: gray; } 
+#rounded .b1 { background: gray; }
+#rounded .b2, #rounded .b3, #rounded .b4 { background: gray; } 
+#rounded .b1b { background: gray; } 
+
 */
 
 .b1, .b2, .b3, .b4, .b1b, .b2b, .b3b, .b4b {

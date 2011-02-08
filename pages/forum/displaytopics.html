@@ -1,0 +1,83 @@
+<?php 
+// display locked and sticky
+if(isset($_REQUEST["id"])){
+	$numPerPage=30;
+	$categoryid=$_REQUEST["id"];
+	$offset=isset($_REQUEST["offset"])?$_REQUEST["offset"]:0;
+	$forum=new FORUM;
+	$forum->getForumFromCategory($categoryid);
+	$topics=$forum->listTopics($categoryid, $offset, $numPerPage);
+	$category=$forum->getCategory($categoryid);
+	HTML::pageTitle("Forum Category: ".$category["title"]);
+	echo '
+	<div class="forumbreadcrumb">
+		<a href="/?forum/display&id='.$forum->forum["id"].'">'.$forum->forum["title"].'</a>&nbsp;&gt;&nbsp; 
+		<a href="/?forum/displaytopics&id='.$categoryid.'">'.$category['title'].'</a>
+	</div>
+	';
+	
+	echo '
+	<table cellpadding="0" cellspacing="0" border="0" class="forumtable">
+		<tr>
+			<td><img src="images/spacer.gif" id="forumuserimagecolumn" height="1"/></td>
+			<td><img src="images/spacer.gif" id="forumtopiccolumn" height="1"/></td>
+			<td><img src="images/spacer.gif" id="forumtopicpostcountcolumn" height="1"/></td>
+			<td><img src="images/spacer.gif" id="forumtopicpostviewscolumn" height="1"/></td>
+		</tr>
+		<tr>
+			<td colspan="4" class="forumheading" valign="bottom">'.$category['title'].'</td>
+		</tr>
+		<tr>
+			<td colspan="4">
+	';
+	FORUM::navigationBar("/?p=forum/displaytopics&id=".$categoryid,$forum->getCategoryTopicCount($categoryid),$numPerPage,$offset);
+	echo '
+			</td>
+		<tr>
+			<td></td>
+			<td><label class="forumlabel">Topic</label></td>
+			<td><label class="forumlabel">Post Count</label></td>
+			<td><label class="forumlabel">Post Views</label></td>
+		</tr>
+	';	
+	if(!empty($topics)){
+		foreach($topics as $topic){
+			if($user=AUTH::getUserfromID($topic['createdby'])){
+				$user=$user[0];
+				$username=$user["first_name"] . " " . $user["last_name"];
+				echo'
+				<tr class="forumtopicrow">
+					<td><a href="/?people/bio&who=' . $user["email"] . '"><img src="/files/'.$topic['createdby'].'/'.$topic['createdby'].'.jpg" height="45" width="45" alt="" class="forumtopicuserimage"/></a></td>
+					<td class="forumtopic">
+						<a href="/?forum/displayposts&id='.$topic['id'].'" class="forumtopictitle">' . $topic['title'] . '</a>
+						<div class="clear"></div>
+						<span class="forumpostdate">'.date("F d, Y H:i",(strtotime($topic['date']))).' - </span><a href="/?people/bio&who=' . $user["email"] . '" class="forumprofilelink">'.$username.'</a>
+						<span class="lastpost">' . $forum->getLastPostDate($topic['id']) . '</span>
+					</td>
+					<td align="center"><span class="forumcount">' . $forum->getTopicPostCount($topic['id']) . '</span></td>
+					<td align="center"><span class="forumcount">' . $topic['numviews'] . '</span></td>
+				</tr>
+				';
+			}
+		}
+	}
+	echo '
+		<tr>
+			<td colspan="4">
+	';
+	FORUM::navigationBar("/?forum/displaytopics&id=".$categoryid,$forum->getCategoryTopicCount($categoryid),$numPerPage,$offset);
+	echo '
+			</td>
+		</tr>
+	</table>
+	<div class="ui_forumform">
+		<form action="/?forum/addtopic&id='.$categoryid.'" method="post"/>
+			<input type="submit" value="Add Topic"/>
+		</form>
+	</div>
+
+	';	
+} else {
+	header("Location: /?p=forum/display");
+}
+?>

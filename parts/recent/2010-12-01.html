@@ -1,0 +1,42 @@
+<?php
+$changes = array(
+	'cm' => array( // General Comments
+		'Major Updates'	=> 'Architecture has been completely revised. Much of the code can be simplified with shorter function names and fewer class calls.',
+		'Directory Changes'	=> 'includes -> library, jsincludes -> javascript, conf -> configuration, Core -> LXF',
+	),
+	'ul' => array( // Updated Libraries
+	),
+	
+	'rl' => array( // Removed Libraries
+		'PARAM'			=> 'now only exists for compatibility, we should move away from using this class in future code.',
+		'INIT'			=> 'now only exists for compatibility, we should move away from using this class in future code.',
+		'URI'			=> 'should no longer be used.',
+		'UTIL'			=> 'now only contains a few mostly unused functions. just the function names can be used instead.',
+		'SESSION'		=> 'now only exists for compatibility, we should move away from using this class in future code.',
+	),
+	
+	'af' => array( // Added Functions
+		'site::page'			=> 'this performs all page related operations including setting environment parameters, page titles, and returning page values and such.',
+		'site::param'			=> 'this function now replaces the PARAM class.',
+		'site::get'			=> 'replaces INIT::get',
+		'site::set'			=> 'replaces INIT::set',
+		'site::set_session'	=> 'replaces SESSION::set',
+		'site::get_session'	=> 'replaces SESSION::get',
+	),
+	
+	'uf' => array( // Updated Functions
+	),
+	
+	'rf' => array( // Removed Functions
+	),
+	
+	'al' => array( // Added Libraries
+		'SITE'		=>	'This replaces INIT, PARAM, and URI classes.',
+		'instrinsics'	=> 'this includes numerous functions to perform generally useful tasks. INIT::get and INIT::set can be replaced with get and set.',
+	),
+	
+	'tl' => array( // Tools
+	),
+);
+
+?>

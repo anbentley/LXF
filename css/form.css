@@ -24,14 +24,13 @@ form {
 
 .form label, .form .comment, .form .comment-required, .form .form-label {
     display: block;
-	font-family: $font[sans_serif];
+	font-family: Arial, sans-serif;
 	color: #444;
 	font-size: 11px;
 	text-transform: uppercase;
 	padding-left: 2px;
 	margin: 0;
 	line-height: 11px;
-
 }
 
 .form span.form-label, .form .checkradio label.inline {
@@ -80,13 +79,18 @@ li.form-error {
 	clear: left;
 }
 
+input[readonly=readonly], textarea[readonly=readonly] {
+	border: solid #FFF;
+	padding: 0;
+}
+
 .form label.checkradio, .form div.checkradio label {
     display: inline;
 	margin-right: .25em;
 }
 
 .form input, .form textarea {
-	font-family: $font[sans_serif];
+	font-family: Arial, sans-serif;
 	font-size: $fontSize[body];
 	margin-bottom: 2px;
 	padding: 2px;
@@ -95,9 +99,10 @@ li.form-error {
 .form .required-multifield, .form .required-newmultifield, .form .multifield, .form .newmultifield, .form .newfield, .form .multifield {
     float: left;
 	margin-right: 0.5em;
+	/* position: relative; */
 }
 
-.form .inline, .form .inline-start, .form fieldset.inline {
+.form div.inline, .form div.inline-start, .form div.inline-no-label {
 	float: left;
 	margin-right: 0.25em;
 	position: relative;
@@ -108,7 +113,7 @@ li.form-error {
 	margin-right: 0.5em;
 }
 
-.form .required-field, .form div.newfield, .form .required-newmultifield, .form .newmultifieldt {
+.form .required-field, .form div.newfield, .form .required-newmultifield, .form .newmultifield {
 	clear: left;
 }
 
@@ -168,8 +173,12 @@ li.form-error {
 }
 
 .form input[type='submit'], .form input[type='reset'] {
-	margin-top: 1em;
 }
+    
+.form div.inline-no-label input[type='submit'], .form div.inline-no-label input[type='reset'], .form div.inline-no-label input[type='checkbox'] {
+	margin-top: 0em;
+}
+
 
 div.slideswitch input {
 	background-repeat: no-repeat; 
@@ -188,16 +197,4 @@ div.slideswitch label {
 
 td div.slideswitch {
 	float: right;
-}
-
-input.combo {
-    margin-left: -2px;
-    margin-top: -20px;
-    position: absolute;
-    font-size: 9px;
-    height: 11px;
-}
-
-select.combo {
-    display: inline;
 }

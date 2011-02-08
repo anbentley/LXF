@@ -1,10 +1,10 @@
 <?php
-$jsol = HTML::javascript('page-onload');
+$jsol = array_extract(get('javascript-onload'), array(page()), '');
 if ($jsol) $jsol = " onload='$jsol'";
 echo "<body class='body'$jsol>\n";
 
-HTML::openTag('div', array('id' => 'page', 'class' => 'page'));
+div('id:page | class:page');
 LINK::name('top');
-HTML::openTag('div', array('id' => 'body', 'class' => 'body'));
+div('id:body | class:body');
 
 ?>

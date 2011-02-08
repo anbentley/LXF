@@ -1,5 +1,5 @@
 function setSearchCheckboxes() {
-	var id = new Array('developer', 'regex', 'exact', 'includes', 'css', 'packages'); // 'case-sensitive', 'show', 'pages', 'parts'
+	var id = new Array('developer', 'regex', 'exact', 'library', 'css', 'packages'); // 'case-sensitive', 'show', 'pages', 'parts'
 	var element = new Array();
 	var disabled = new Array();
 	for ( var i in id ) {

@@ -40,7 +40,7 @@
 }
 
 #filelist tr {
-	background: #DDF;
+	background: #ddd;
 }
 
 #filelist tr.odd {
@@ -57,6 +57,10 @@
 #filelist a {
 	color: #00F;
 	padding: 0.5em;
+}
+
+#filelist a img, #filelist img{
+	display:inline;
 }
 
 #filelist a:hover {
