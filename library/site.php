@@ -843,16 +843,12 @@ function page($part='name', $value=null) {
 			if (!is_array($params)) {
 				if ($params == null) {
 					$params = array();
-					foreach ($_GET as $p => $v) {
-						if (function_exists(filter_input)) $v = filter_input(INPUT_GET, $p, FILTER_SANITIZE_STRING);
-						$params[$p] = $v;
-					}
+					foreach ($_GET as $p => $v) $params[$p] = filter_input(INPUT_GET, $p, FILTER_SANITIZE_STRING);
 					foreach ($_POST as $p => $v) {
 						if (is_array($v)) {
 							$params[$p] = $v;
 						} else {
-							if (function_exists(filter_input)) $v = filter_input(INPUT_POST, $p, FILTER_SANITIZE_STRING);
-							$params[$p] = $v;
+							$params[$p] = filter_input(INPUT_POST, $p, FILTER_SANITIZE_STRING);
 							if ($params[$p] == null) $params[$p] = $v;
 						}
 					}

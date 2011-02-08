@@ -336,8 +336,8 @@ function scaleImage($o_file, $t_wd = 100, $t_ht = 100, $file=null, $mime=null) {
 function serve($file, $w, $h) {
 	$unlink = '';
 	if (SECURE::checkEncryptionPolicy($file)) {
-		$temp = tempnam(sys_get_temp_dir(), basename($file));
-		FILE::decrypt($file, $temp);
+		$temp = tempnam(dirname($file), 'de');
+		ncrypt('d', $file, $temp);
 		$file = $temp;
 		$unlink = $temp;
 	}

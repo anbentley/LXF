@@ -31,9 +31,7 @@
 
 .gallery .directory-icon {
 	font-weight: bold;
-	float: left;
-	width: 28%;
-	margin: 2.6%;
+	clear: left;
 	padding-top: $space[thin];
 	height: 260px;
 }
@@ -41,6 +39,15 @@
 .gallery .file {
 	font-weight: normal;
 	clear: left;
+}
+
+.image-block, .left-column, .right-column {
+	margin: 0;
+	padding: 0;
+}
+
+.left-column, .right-column {
+	float: left;
 }
 
 .gallery .file-image {

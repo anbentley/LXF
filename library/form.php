@@ -1872,8 +1872,9 @@ function allowEdit($name, $sourcefile, $content, $size=80, $data=array()) {
 function encrypt_uploaded_file($filename, $destination) {
 	if (!file_exists($filename) || !is_file($filename) || !is_uploaded_file($filename)) return false;
 	
-	$result = FILE::encrypt($filename, $destination);
+	$result = ncrypt('e', $filename, $destination);
 	@unlink($filename);
+	
 	return $result;
 }
 				

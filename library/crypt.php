@@ -107,11 +107,11 @@ function keygen ($password, $salt, $count=1000, $keylen) {
 function ncrypt($in, $out, $mode='e', $key=null) {
 	if ($key == null) {
 		$seed = get('random-seed');
-		$key = CRYPT::keygen(substr($seed, 32, 32), substr($seed, 0, 16), 1000, 32);
+		//$key = CRYPT::keygen(substr($seed, 32, 32), substr($seed, 0, 16), 1000, 32);
 	}
 	$cmd = '/usr/local/bin/ncrypt -'.$mode.' -i '.$in.' -o '.$out.' -k '.substr($seed, 32, 32);
 	exec($cmd, $output, $status);
-	
+
 	return $status;
 }
 

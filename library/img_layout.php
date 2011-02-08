@@ -15,8 +15,6 @@
  */
 class IMG_LAYOUT {
 
-static $iip = 2; // inter image padding
-
 /**
  * Returns an array of aspect ratios of all images.
  *
@@ -72,24 +70,24 @@ function across($n, $images, $max) {
 	
 	// compute the width of the first image
 	$w[0] = round( ($factor*($block - ($n-1)*4)) / $divisor );
-	$wid = $w[0] + (self::$iip*2);
+	$wid = $w[0] + (get('gallery-padding')*2);
 	
 	// compute the width of all remaining images (except the last one)
 	for ($i = 1; $i < $n-1; $i++) {
 		$w[$i] = round($w[0]*$r[0]/$r[$i]);
-		$wid += $w[$i] + (self::$iip*2);
+		$wid += $w[$i] + (get('gallery-padding')*2);
 	}
 
 	// compute the width of the last image
-	if ($n > 1) $w[$n-1] = $block - $wid - self::$iip;
+	if ($n > 1) $w[$n-1] = $block - $wid - get('gallery-padding');
 	
 	// compute the height of all images
 	$h1 = round($w[0]*$r[0]);
 	
 	// create the HTML for this image block
 	$result = div('class:image-block | style:width: '.$block.'px;');
-	for ($i = 0; $i < $n-1; $i++) $result .= self::formatImage($images[$i], $w[$i], $h1, $detail[$i], self::$iip, self::$iip, self::$iip);
-	$result .= self::formatImage($images[$n-1], $w[$n-1], $h1, $detail[$n-1], self::$iip, self::$iip);
+	for ($i = 0; $i < $n-1; $i++) $result .= self::formatImage($images[$i], $w[$i], $h1, $detail[$i], get('gallery-padding'), get('gallery-padding'), get('gallery-padding'));
+	$result .= self::formatImage($images[$n-1], $w[$n-1], $h1, $detail[$n-1], get('gallery-padding'), get('gallery-padding'));
 
 	$result .= div('/');
 	
@@ -112,11 +110,14 @@ function block($left, $right, $images, $max) {
     
 	$r = self::getAspectRatios($images);
 	
+	$image = array_keys($images);
+	$detail = array_values($images);
+	/*
 	foreach ($images as $entry => $details) {
 		$image[] = $entry;
 		$detail[] = $details;
 	}
-	
+	*/
 	// compute width of left column
 	$factor1 = 0; // the sum of all ratios
 	$factor2 = 0; // the sum of all ratios on the right side
@@ -126,16 +127,15 @@ function block($left, $right, $images, $max) {
 	}
 	
 	$w[0] = round($factor2 * $max/$factor1);
-	$wlc = $w[0] + self::$iip;
+	$wlc = $w[0] + get('gallery-padding')*2;
 	
 	// use this width for all left images
 	for ($i = 1; $i < $left; $i++) $w[$i] = $w[0];	
 	
 	// compute width of all right images
 	$wrc = $block - $wlc;
-    $wrc = $wrc - self::$iip;
      
-	$wri = $wrc - self::$iip;
+	$wri = $wrc - get('gallery-padding')*2;
     
 	for ($i = $left; $i < ($left+$right); $i++) $w[$i] = $wri;
 	
@@ -144,28 +144,27 @@ function block($left, $right, $images, $max) {
 	
 	// compute height of left column of images
 	$last = 0;
-	for ($i = 0; $i < $left; $i++) $last += ($h[$i] + self::$iip);
-    
+	// add all the left side images
+	for ($i = 0; $i < $left; $i++) $last += $h[$i];
+	$last += ($left * get('gallery-padding')*2);
 		
 	// subtract off the height of all the right images except the last to see what is left
-	for ($i = $left; $i < ($left + $right-1); $i++) $last -= ($h[$i] + self::$iip);
-	
-	$offset = ($left - $right) * self::$iip;
+	for ($i = $left; $i < ($left + $right-1); $i++) $last -= $h[$i];
+	$last -= ($right * get('gallery-padding')*2);
 	
 	// compute the height of the last image
-    $adjust = ($left - $right);
-	$h[$left+$right-1] = $last + $offset - self::$iip + $adjust;
+	$h[$left+$right-1] = $last - get('gallery-padding')*2;
 			
 	// output the image block
-    $pad = self::$iip;
+    $pad = get('gallery-padding');
     $leftmargin = 'margin: 0; padding: 0';
-    $rightmargin = 'margin: 0 '.$pad.'px 0 0; padding: 0';
+    $rightmargin = 'margin: 0; padding: 0';
     
-	$result = div('class:image-block | style:margin: 0; width: '.$block.'px;').div('class:left-column | style:width: '.$wlc.'px; '.$leftmargin);
+	$result = div('class:image-block | style:width: '.$block.'px;').div('class:left-column | style:width: '.$wlc.'px;');
 	for ($i = 0; $i < ($left+$right); $i++) {
 		// putting the right column in a separate div makes the CSS simpler
 		if ($i == $left) $result .= div('/')."\n".div('class:right-column | style:width: '.$wrc.'px;');
-		$result .= self::formatImage($images[$i], $w[$i], $h[$i], $detail[$i], self::$iip, self::$iip);
+		$result .= self::formatImage($images[$i], $w[$i], $h[$i], $detail[$i]);
 	}
 	$result .= div('/').div('/');
 	
@@ -184,7 +183,7 @@ function block($left, $right, $images, $max) {
  * @return			the html to display the image.
  * @see				LINK::local
  */
-function formatImage($image, $w, $h, $details, $tpad, $lpad, $rpad=0) {
+function formatImage($image, $w, $h, $details) {
 	$defaults = array(
         'alt'   => '',
         'link'  => '',
@@ -195,7 +194,7 @@ function formatImage($image, $w, $h, $details, $tpad, $lpad, $rpad=0) {
     $details = array_merge($defaults, $details);
     $details['height'] = $h;
     $details['width']  = $w;
-    $details['style']  = 'margin: '.$tpad.'px '.$rpad.'px 0px '.$lpad.'px; padding: 0; border: none;';
+    $details['style']  = 'margin: 0; padding: '.get('gallery-padding').'px; border: none;';
     $link = $details['link'];
     $items = array('width', 'height', 'alt', 'title', 'style');
     

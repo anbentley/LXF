@@ -45,13 +45,13 @@ function getMetadata($name) {
 				$xml = simplexml_load_file($metafile);
 				foreach (array('short', 'long', 'icon') as $field) {
 					$metaobject[$field] = array_shift($xml->xpath('/directory/'.$field));
-					if (is_object($metaobject[$field])) $metaobject[$field] = strval($metaobject[$field]);
+					if (is_object($metaobject[$field])) $metaobject[$field] = $metaobject[$field]->__toString();
 				}
 				foreach ($xml->xpath('/directory/file') as $fileentry) {
 					$file = array();
-					$file['name'] = strval($fileentry->name);
-					$file['short'] = strval($fileentry->short);
-					$file['long'] = strval($fileentry->long);
+					$file['name'] = $fileentry->name->__toString();
+					$file['short'] = $fileentry->short->__toString();
+					$file['long'] = $fileentry->long->__toString();
 
 					$metaobject['file'][$file['name']] = $file;
 				}

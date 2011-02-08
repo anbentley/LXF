@@ -481,6 +481,7 @@ function safeToServe($filename) {
 function serve($drm, $f, $mode='inline', $altf='') {
     if ($drm) $f = $drm.'/'.$f;
 	$filename = SITE::file($f);
+	$unlink = '';
 	
 	if (file_exists($filename)) { // we have a valid source file
 		$checkDownload = get('check-download', array('FILE', 'safeToServe'));
@@ -507,28 +508,33 @@ function serve($drm, $f, $mode='inline', $altf='') {
 			IMG::serve($filename, param('w', 'value', 0), param('h', 'value', 0));
 		}
 		
+		$unlink = '';
+		if (($checkpolicy = get('encryption-policy')) && @call_user_func($checkpolicy, $filename)) {
+			$temp = tempnam(dirname($filename), 'de');
+			ncrypt('d', $filename, $temp);
+			$filename = $temp;
+			$unlink = $temp;
+		}
+		
 		$length = filesize($filename);
 		
 		$header = array(
 			'Pragma: private',
-			'Cache-control: private, must-revalidate',
-			"Content-type: $mime",
-			"Content-Transfer-Encoding: Binary",
-			"Accept-Ranges: bytes",
-			"Content-length: $length",
-			"Content-disposition: $mode; filename=".$altf,
+			'Cache-Control: must-revalidate, post-check=0, pre-check=0',
+			'Content-type: '.$mime,
+			'Content-Transfer-Encoding: Binary',
+			'Accept-Ranges: bytes',
+			'Content-length: '.$length,
+			'Content-disposition: '.$mode.'; filename='.$altf,
 		);
 
-		ob_empty();	// remove any prior buffers
-
-		foreach ($header as $entry) header($entry);
-		if (($checkpolicy = get('encryption-policy')) && @call_user_func($checkpolicy, $filename)) {
-			$temp = tempnam(sys_get_temp_dir(), 'de');
-			self::crypt('de', $filename, $temp, null, false);
-			$filename = $temp;
-		}
+		while(@ob_end_clean()); // turn off all buffering
 		
-		$size = readfile($filename);
+		foreach ($header as $entry) header($entry);
+		
+		@readfile($filename);
+		
+		if ($unlink != '') @unlink($unlink);
 		exit();
 	} else {
 		echo p('', 'file not found.');
@@ -997,16 +1003,18 @@ function get_encrypted_file_contents ($file, $key=null) {
  */
 function ncrypt($mode, $from, $to='', $key=null) {
 	if (!file_exists($from) || !is_file($from)) return false;
-	
-	if ($key == null) $key = substr(get('random-seed'), 32, 32);
-	
-	$temp = tempnam(sys_get_temp_dir(), $mode);
-	
+		
 	if ($to == '') $to = $from;
 	
-	$result = CRYPT::ncrypt($from, $temp, $key, $mode);
+	if ($to == $from) {
+		$temp = dirname($from).'/'.basename(tempnam(sys_get_temp_dir(), $mode));
+	} else {
+		$temp = $to;
+	}
 	
-	if (!$result || !rename($from, $from.'.old') || (file_exists($to) && !unlink($to)) || !rename($temp, $to) || !unlink($from.'.old')) return false;
+	$result = CRYPT::ncrypt($from, $temp, $mode, $key);
+	if ($result) return false;
+	if (($from == $to) && (!rename($from, $from.'.old') || !rename($temp, $to) || !unlink($from.'.old'))) return false;
 	
 	return true;
 }

@@ -20,7 +20,7 @@ $settings = array(
 	
 	'random-seed'	 => '0E1B5B90EC97C66056720F6B1307FB9892679A39D8F29ED9D6F71EFFEA5D52E7',
 	'file-not-found' => 'nofile.html',
-
+	'gallery-padding' => 2,
 );
 
 ?>
