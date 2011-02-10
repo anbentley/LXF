@@ -191,6 +191,36 @@ function str_between($haystack, $prefix, $suffix, $sensitive=true) {
 }
 
 /**
+ *	Tokenize a string treats quoted strings as a token.
+ *
+ *	@param $string	the string to process
+ *	@return	an ordered array of strings.
+ */
+function tokenize($string) {
+	$tokens = token_get_all('<'.'?php '.$string.' ?'.'>');
+	$result = array();
+	foreach ($tokens as $token) {
+		if (is_string($token)) { // simple 1-character token
+			if ($token == '"') $token = '';
+		} else {
+			switch ($token[0]) {
+				case T_OPEN_TAG:
+				case T_CLOSE_TAG:
+				case T_WHITESPACE:
+					$token = '';
+					break;
+				default:
+				$token = $token[1];
+			}
+			if (str_ends($token, ' ?'.'>')) $token = str_replace(' ?'.'>', '', $token);
+			if ($token) $result[] = trim($token);
+		}
+	}
+	
+	return $result;
+}
+
+/**
  * Wraps a string with the passed characters if the target is found.
  *
  * @param	$string		the string to process.
